@@ -20,6 +20,9 @@ public:
     // Renders the background video feed.
     void renderBackground();
 
+    // Renders a textured 3D quad using the video texture (for virtual TV screens).
+    void renderTexturedQuad(const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection);
+
     // Renders a simple 3D object (a cube) with the given model, view, and projection matrices.
     void renderCube(const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection, const glm::vec3& color);
 
@@ -51,6 +54,7 @@ private:
 
     // Shader locations
     GLint quadTexLocation;
+    GLint quadMVPLocation;
     GLint objMVPLocation;
     GLint objColorLocation;
 };

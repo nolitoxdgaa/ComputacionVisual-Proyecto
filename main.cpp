@@ -214,9 +214,8 @@ int main() {
                     glm::mat4 tvModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, -3.0f));
                     tvModel = glm::scale(tvModel, glm::vec3(3.0f, 2.0f, 0.05f));
 
-                    // TODO (Avanzado): Renderizar la textura del video en este quad 3D
-                    // Por ahora se renderiza como un cubo blanco plano en posicion de pantalla
-                    renderer.renderCube(tvModel, virtualView, projection, glm::vec3(0.9f, 0.9f, 0.9f));
+                    // Renderizar la pantalla de TV con la textura del video en vivo en el mundo virtual 3D
+                    renderer.renderTexturedQuad(tvModel, virtualView, projection);
                 }
                 break;
 

@@ -12,8 +12,9 @@ const std::string quadVertexShaderSrc = R"(
     layout (location = 0) in vec2 aPos;
     layout (location = 1) in vec2 aTexCoords;
     out vec2 TexCoords;
+    uniform mat4 uMVP;
     void main() {
-        gl_Position = vec4(aPos, 0.0, 1.0);
+        gl_Position = uMVP * vec4(aPos, 0.0, 1.0);
         TexCoords = aTexCoords;
     }
 )";
@@ -52,7 +53,7 @@ const std::string objectFragmentShaderSrc = R"(
 StereoRenderer::StereoRenderer() 
     : quadProgram(0), objectProgram(0), quadVAO(0), quadVBO(0), 
       cubeVAO(0), cubeVBO(0), videoTextureId(0), 
-      quadTexLocation(-1), objMVPLocation(-1), objColorLocation(-1) {}
+      quadTexLocation(-1), quadMVPLocation(-1), objMVPLocation(-1), objColorLocation(-1) {}
 
 StereoRenderer::~StereoRenderer() {
     if (quadProgram) glDeleteProgram(quadProgram);
@@ -85,6 +86,7 @@ bool StereoRenderer::initialize() {
 
     // Get uniform locations
     quadTexLocation = glGetUniformLocation(quadProgram, "videoTexture");
+    quadMVPLocation = glGetUniformLocation(quadProgram, "uMVP");
     objMVPLocation = glGetUniformLocation(objectProgram, "uMVP");
     objColorLocation = glGetUniformLocation(objectProgram, "uColor");
 
@@ -171,10 +173,27 @@ void StereoRenderer::renderBackground() {
     glBindTexture(GL_TEXTURE_2D, videoTextureId);
     glUniform1i(quadTexLocation, 0);
 
+    glm::mat4 identity = glm::mat4(1.0f);
+    glUniformMatrix4fv(quadMVPLocation, 1, GL_FALSE, glm::value_ptr(identity));
+
     glBindVertexArray(quadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
     glEnable(GL_DEPTH_TEST);
+}
+
+void StereoRenderer::renderTexturedQuad(const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection) {
+    glUseProgram(quadProgram);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, videoTextureId);
+    glUniform1i(quadTexLocation, 0);
+
+    glm::mat4 mvp = projection * view * model;
+    glUniformMatrix4fv(quadMVPLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
 }
 
 void StereoRenderer::renderCube(const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection, const glm::vec3& color) {
