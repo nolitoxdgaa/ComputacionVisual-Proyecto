@@ -140,7 +140,7 @@ int main() {
         glm::quat quatPitch = glm::angleAxis(glm::radians(cameraPitch), glm::vec3(1, 0, 0));
         glm::mat4 cameraRotation = glm::mat4_cast(glm::normalize(quatYaw * quatPitch));
         glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 3.0f));
-        glm::mat4 virtualView = cameraRotation * cameraTranslation;
+        glm::mat4 virtualView = glm::inverse(cameraRotation * cameraTranslation);
 
         // ==========================================
         // MAQUINA DE ESTADOS: Continuo de Milgram
