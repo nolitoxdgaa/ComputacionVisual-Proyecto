@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "MSYS2-MinGW64",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/msys64/mingw64/include",
+                "C:/msys64/mingw64/include/opencv4",
+                "C:/msys64/mingw64/include/c++/16.1.0",
+                "C:/msys64/mingw64/include/c++/16.1.0/x86_64-w64-mingw32",
+                "C:/msys64/mingw64/x86_64-w64-mingw32/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}
