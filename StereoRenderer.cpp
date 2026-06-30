@@ -597,15 +597,20 @@ void StereoRenderer::renderDesertOasis(const glm::mat4& view,
     const glm::vec3 cSky       {0.92f, 0.48f, 0.28f}; // Sunset orange sky
     const glm::vec3 cSun       {1.00f, 0.88f, 0.35f}; // Golden sun
     const glm::vec3 cWood      {0.33f, 0.21f, 0.11f}; // Dark rustic wood beams
-    const glm::vec3 cStone     {0.45f, 0.44f, 0.46f}; // Weathered grey stone base
+    const glm::vec3 cStone     {0.45f, 0.44f, 0.46f}; // Weathered grey stone
+    const glm::vec3 cLightStone{0.55f, 0.54f, 0.56f}; // Highlighted stone
     const glm::vec3 cGreen     {0.18f, 0.48f, 0.22f}; // Acacia flat foliage
     const glm::vec3 cWater     {0.08f, 0.52f, 0.68f}; // Blue oasis pool
+    const glm::vec3 cCloud     {0.95f, 0.72f, 0.65f}; // Warm pink sunset clouds
+    const glm::vec3 cCactus    {0.25f, 0.55f, 0.20f}; // Green cactus body
+    const glm::vec3 cFireOrange{1.00f, 0.45f, 0.05f}; // Glowing fire orange
+    const glm::vec3 cFireRed   {0.90f, 0.15f, 0.10f}; // Glowing fire red
 
     // ====================================================
-    //  1. ENVIRONMENT (Floor, Sunset Sky, Sun)
+    //  1. ENVIRONMENT & SKY (Floor, Sunset Sky, Sun)
     // ====================================================
-    cube({0.0f, -1.15f, -3.0f}, {20.f, 0.08f, 20.f}, cSand); // Floor desert plane
-    cube({0.0f,  3.20f, -9.8f}, {20.f, 9.00f, 0.08f}, cSky);  // Back skybox wall
+    cube({0.0f, -1.15f, -3.0f}, {22.f, 0.08f, 22.f}, cSand); // Floor desert plane
+    cube({0.0f,  3.20f, -9.8f}, {22.f, 9.00f, 0.08f}, cSky);  // Back skybox wall
     // Golden sun low on horizon (pulsates slightly)
     float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
     cube({0.0f, 0.35f, -9.6f}, {1.60f * sunPulse, 1.60f * sunPulse, 0.05f}, cSun);
@@ -614,15 +619,27 @@ void StereoRenderer::renderDesertOasis(const glm::mat4& view,
     cube({0.0f, -1.11f, -2.3f}, {2.4f, 0.01f, 2.6f}, cWater);
 
     // ====================================================
-    //  2. GEOMETRIC LOW-POLY SAND DUNES
+    //  2. DRIFTING CLOUDS (Sunset sky backdrop)
+    // ====================================================
+    auto drawCloud = [&](float baseStartX, float y, float z, float speed, float sizeScale) {
+        float x = baseStartX + std::fmod(time * speed, 24.0f);
+        if (x > 12.0f) x = -12.0f + (x - 12.0f); // Wrap around screen bounds
+        cube({x, y, z}, {1.60f * sizeScale, 0.35f * sizeScale, 0.50f * sizeScale}, cCloud);
+        cube({x + 0.30f * sizeScale, y + 0.15f * sizeScale, z}, {1.00f * sizeScale, 0.30f * sizeScale, 0.40f * sizeScale}, cCloud * 1.10f);
+    };
+    drawCloud(-6.0f, 2.60f, -9.5f, 0.22f, 1.10f);
+    drawCloud( 4.0f, 3.10f, -9.5f, 0.15f, 0.85f);
+    drawCloud(-10.0f, 1.90f, -9.5f, 0.28f, 1.25f);
+
+    // ====================================================
+    //  3. GEOMETRIC LOW-POLY SAND DUNES
     // ====================================================
     cube({-3.8f, -0.90f, -6.5f}, {4.0f, 0.45f, 4.5f}, cDarkSand);  // Left dune
     cube({ 3.8f, -0.85f, -7.0f}, {4.5f, 0.55f, 4.0f}, cDarkSand);  // Right dune
     cube({ 0.0f, -0.95f, -9.0f}, {6.5f, 0.38f, 2.8f}, cSand);      // Far center dune
 
     // ====================================================
-    //  3. STYLIZED LOW-POLY ACACIA / OASIS TREES
-    //  Trunk = brown vertical box; Canopy = flat green wide boxes
+    //  4. STYLIZED LOW-POLY ACACIA / OASIS TREES
     // ====================================================
     auto drawAcacia = [&](glm::vec3 basePos, float scaleVal) {
         float trunkH = 1.50f * scaleVal;
@@ -640,7 +657,68 @@ void StereoRenderer::renderDesertOasis(const glm::mat4& view,
     drawAcacia({ 5.0f, -1.11f, -6.8f}, 0.90f); // Far right tree
 
     // ====================================================
-    //  4. RUSTIC SCREEN STRUCTURE + LIVE WEBCAM FEED
+    //  5. SAGUARO CACTI
+    // ====================================================
+    auto drawCactus = [&](float cx, float cz, float hVal) {
+        // Main stem
+        cube({cx, -1.11f + hVal*0.5f, cz}, {0.09f, hVal, 0.09f}, cCactus);
+        // Left arm (elbow + vertical arm)
+        cube({cx - 0.12f, -1.11f + hVal*0.55f, cz}, {0.16f, 0.08f, 0.08f}, cCactus);
+        cube({cx - 0.20f, -1.11f + hVal*0.72f, cz}, {0.08f, hVal*0.35f, 0.08f}, cCactus);
+        // Right arm
+        cube({cx + 0.12f, -1.11f + hVal*0.42f, cz}, {0.16f, 0.08f, 0.08f}, cCactus);
+        cube({cx + 0.20f, -1.11f + hVal*0.58f, cz}, {0.08f, hVal*0.32f, 0.08f}, cCactus);
+    };
+    drawCactus(-2.0f, -2.5f, 0.85f);  // Left side close cactus
+    drawCactus( 2.2f, -2.8f, 0.95f);  // Right side close cactus
+    drawCactus( 5.5f, -5.0f, 1.20f);  // Far right cactus
+
+    // ====================================================
+    //  6. ROCK CLUSTERS
+    // ====================================================
+    // Clustered around the oasis pool
+    cube({ 1.30f, -1.11f, -2.3f}, {0.24f, 0.16f, 0.22f}, cStone);
+    cube({ 1.45f, -1.11f, -2.0f}, {0.18f, 0.10f, 0.18f}, cLightStone);
+    cube({-1.35f, -1.11f, -2.1f}, {0.30f, 0.14f, 0.20f}, cStone);
+    cube({-1.45f, -1.11f, -1.6f}, {0.16f, 0.08f, 0.16f}, cLightStone);
+
+    // ====================================================
+    //  7. CAMPFIRE (Right of water pool)
+    // ====================================================
+    const float fireX =  1.00f;
+    const float fireZ = -1.20f;
+    // Crossed logs
+    cube({fireX - 0.05f, -1.11f, fireZ}, {0.30f, 0.05f, 0.05f}, cWood);
+    cube({fireX + 0.05f, -1.11f, fireZ}, {0.05f, 0.05f, 0.30f}, cWood);
+    // Flickering fire sparks
+    float fTime = time * 7.5f;
+    float flameH = 0.12f + 0.06f * std::sin(fTime);
+    cube({fireX, -1.05f + flameH*0.5f, fireZ}, {0.10f, flameH, 0.10f}, cFireOrange);
+    cube({fireX, -1.02f + flameH*0.7f, fireZ}, {0.06f, flameH*0.6f, 0.06f}, cFireRed);
+    // Additive glow
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glDepthMask(GL_FALSE);
+    cube({fireX, -0.95f, fireZ}, {0.28f, 0.35f, 0.28f}, glm::vec3(0.25f, 0.10f, 0.01f));
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    // ====================================================
+    //  8. FIREFLIES / OASIS MAGIC PARTICLES (Rising over water)
+    // ====================================================
+    for (int i = 0; i < 4; ++i) {
+        float fOffset = float(i) * 1.5f;
+        float pTime = time * 0.8f + fOffset;
+        float py = -1.08f + std::fmod(pTime, 1.2f);
+        float px = std::sin(pTime * 2.8f) * 0.40f + (float(i - 2) * 0.35f);
+        float pz = -2.30f + std::cos(pTime * 2.0f) * 0.40f;
+        // Fade out as they rise
+        float scale = 0.024f * (1.2f - (py + 1.08f));
+        cube({px, py, pz}, {scale, scale, scale}, cSun * 1.20f);
+    }
+
+    // ====================================================
+    //  9. RUSTIC SCREEN STRUCTURE + LIVE WEBCAM FEED
     // ====================================================
     const float scrY = 0.90f;
     const float scrZ = -4.8f;
