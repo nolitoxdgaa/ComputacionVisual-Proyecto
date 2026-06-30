@@ -44,10 +44,10 @@ public:
                               int frameW, int frameH);
 
     // ---------------------------------------------------------------
-    // AV Mode 3 – Desert Oasis / Savanna (Low-Poly)
-    // The camera feed is displayed on a rustic screen structure in a desert landscape.
+    // AV Mode 3 – Cyberpunk Control Room / Holographic Lab
+    // The camera feed is projected onto a central floating holographic table.
     // ---------------------------------------------------------------
-    void renderDesertOasis(const glm::mat4& view, const glm::mat4& projection, float time);
+    void renderCyberpunkLab(const glm::mat4& view, const glm::mat4& projection, float time);
 
     // ---------------------------------------------------------------
     // VR Mode 4 – basic virtual scene (used inside stereo callback too)

@@ -212,14 +212,14 @@ int main() {
 
             // --------------------------------------------------
             // MODO 3: VIRTUALIDAD AUMENTADA
-            // Entorno 3D virtual de Oasis en el Desierto con el
-            // feed de la camara proyectado en una pantalla rustica.
+            // Entorno 3D virtual de laboratorio Cyberpunk con el
+            // feed de la camara proyectado en una mesa holografica.
             // --------------------------------------------------
             case ContinuumState::AUGMENTED_VIRTUALITY:
                 if (cameraOk) {
                     renderer.updateVideoTexture(tracker.getFrame());
                 }
-                renderer.renderDesertOasis(virtualView, projection, (float)glfwGetTime());
+                renderer.renderCyberpunkLab(virtualView, projection, (float)glfwGetTime());
                 break;
 
             // --------------------------------------------------

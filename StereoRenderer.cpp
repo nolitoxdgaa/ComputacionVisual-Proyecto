@@ -582,9 +582,9 @@ void StereoRenderer::renderSolarSystem(const glm::mat4& arModel,
     }
 }
 
-// ------------------------------------------------------------------ renderDesertOasis
-void StereoRenderer::renderDesertOasis(const glm::mat4& view,
-                                       const glm::mat4& projection, float time) {
+// ------------------------------------------------------------------ renderCyberpunkLab
+void StereoRenderer::renderCyberpunkLab(const glm::mat4& view,
+                                        const glm::mat4& projection, float time) {
     // Compact helper lambda for solid cubes
     auto cube = [&](glm::vec3 pos, glm::vec3 sc, glm::vec3 col) {
         glm::mat4 m = glm::scale(glm::translate(glm::mat4(1.0f), pos), sc);
@@ -592,156 +592,110 @@ void StereoRenderer::renderDesertOasis(const glm::mat4& view,
     };
 
     // Color Palette
-    const glm::vec3 cSand      {0.84f, 0.69f, 0.44f}; // Warm desert sand
-    const glm::vec3 cDarkSand  {0.78f, 0.63f, 0.38f}; // Shadowed dune sand
-    const glm::vec3 cSky       {0.92f, 0.48f, 0.28f}; // Sunset orange sky
-    const glm::vec3 cSun       {1.00f, 0.88f, 0.35f}; // Golden sun
-    const glm::vec3 cWood      {0.33f, 0.21f, 0.11f}; // Dark rustic wood beams
-    const glm::vec3 cStone     {0.45f, 0.44f, 0.46f}; // Weathered grey stone
-    const glm::vec3 cLightStone{0.55f, 0.54f, 0.56f}; // Highlighted stone
-    const glm::vec3 cGreen     {0.18f, 0.48f, 0.22f}; // Acacia flat foliage
-    const glm::vec3 cWater     {0.08f, 0.52f, 0.68f}; // Blue oasis pool
-    const glm::vec3 cCloud     {0.95f, 0.72f, 0.65f}; // Warm pink sunset clouds
-    const glm::vec3 cCactus    {0.25f, 0.55f, 0.20f}; // Green cactus body
-    const glm::vec3 cFireOrange{1.00f, 0.45f, 0.05f}; // Glowing fire orange
-    const glm::vec3 cFireRed   {0.90f, 0.15f, 0.10f}; // Glowing fire red
+    const glm::vec3 cFloor      {0.02f, 0.03f, 0.06f}; // Dark steel floor
+    const glm::vec3 cWall       {0.01f, 0.01f, 0.03f}; // Deep space wall
+    const glm::vec3 cConsole    {0.12f, 0.14f, 0.20f}; // Dark blue metal frame
+    const glm::vec3 cHoloBlue    {0.00f, 0.70f, 1.00f}; // Neon cyan
+    const glm::vec3 cHoloPurple  {0.60f, 0.20f, 0.90f}; // Cyber purple
+    const glm::vec3 cServerRack  {0.08f, 0.09f, 0.12f}; // Server body
+    const glm::vec3 cLedGreen    {0.00f, 1.00f, 0.40f};
+    const glm::vec3 cLedRed      {1.00f, 0.15f, 0.20f};
 
     // ====================================================
-    //  1. ENVIRONMENT & SKY (Floor, Sunset Sky, Sun)
+    //  1. ENVIRONMENT (Floor, Bulkheads, Neon Grid)
     // ====================================================
-    cube({0.0f, -1.15f, -3.0f}, {22.f, 0.08f, 22.f}, cSand); // Floor desert plane
-    cube({0.0f,  3.20f, -9.8f}, {22.f, 9.00f, 0.08f}, cSky);  // Back skybox wall
-    // Golden sun low on horizon (pulsates slightly)
-    float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
-    cube({0.0f, 0.35f, -9.6f}, {1.60f * sunPulse, 1.60f * sunPulse, 0.05f}, cSun);
+    cube({0.0f, -1.15f, -3.0f}, {16.f, 0.08f, 16.f}, cFloor); // floor
+    cube({0.0f,  3.50f, -3.0f}, {16.f, 0.08f, 16.f}, cWall);  // ceiling
+    cube({-7.5f, 1.20f, -3.0f}, {0.08f, 5.0f, 16.f},  cWall);  // left wall
+    cube({ 7.5f, 1.20f, -3.0f}, {0.08f, 5.0f, 16.f},  cWall);  // right wall
+    cube({0.0f,  1.20f, -8.0f}, {16.f,  5.0f, 0.08f}, cWall);  // back wall
 
-    // Oasis water pool at the front center of the screen
-    cube({0.0f, -1.11f, -2.3f}, {2.4f, 0.01f, 2.6f}, cWater);
+    // Floating structural beams on walls
+    cube({-7.4f, 1.20f, -3.0f}, {0.04f, 0.15f, 16.0f}, cHoloBlue * 0.4f);
+    cube({ 7.4f, 1.20f, -3.0f}, {0.04f, 0.15f, 16.0f}, cHoloBlue * 0.4f);
 
-    // ====================================================
-    //  2. DRIFTING CLOUDS (Sunset sky backdrop)
-    // ====================================================
-    auto drawCloud = [&](float baseStartX, float y, float z, float speed, float sizeScale) {
-        float x = baseStartX + std::fmod(time * speed, 24.0f);
-        if (x > 12.0f) x = -12.0f + (x - 12.0f); // Wrap around screen bounds
-        cube({x, y, z}, {1.60f * sizeScale, 0.35f * sizeScale, 0.50f * sizeScale}, cCloud);
-        cube({x + 0.30f * sizeScale, y + 0.15f * sizeScale, z}, {1.00f * sizeScale, 0.30f * sizeScale, 0.40f * sizeScale}, cCloud * 1.10f);
-    };
-    drawCloud(-6.0f, 2.60f, -9.5f, 0.22f, 1.10f);
-    drawCloud( 4.0f, 3.10f, -9.5f, 0.15f, 0.85f);
-    drawCloud(-10.0f, 1.90f, -9.5f, 0.28f, 1.25f);
+    // Floor grids (neon cian strips)
+    cube({-3.0f, -1.12f, -3.0f}, {0.08f, 0.01f, 10.0f}, cHoloBlue * 0.7f);
+    cube({ 3.0f, -1.12f, -3.0f}, {0.08f, 0.01f, 10.0f}, cHoloBlue * 0.7f);
+    cube({ 0.0f, -1.12f, -5.0f}, {6.00f, 0.01f, 0.08f}, cHoloPurple * 0.7f);
 
     // ====================================================
-    //  3. GEOMETRIC LOW-POLY SAND DUNES
-    // ====================================================
-    cube({-3.8f, -0.90f, -6.5f}, {4.0f, 0.45f, 4.5f}, cDarkSand);  // Left dune
-    cube({ 3.8f, -0.85f, -7.0f}, {4.5f, 0.55f, 4.0f}, cDarkSand);  // Right dune
-    cube({ 0.0f, -0.95f, -9.0f}, {6.5f, 0.38f, 2.8f}, cSand);      // Far center dune
-
-    // ====================================================
-    //  4. STYLIZED LOW-POLY ACACIA / OASIS TREES
-    // ====================================================
-    auto drawAcacia = [&](glm::vec3 basePos, float scaleVal) {
-        float trunkH = 1.50f * scaleVal;
-        float trunkW = 0.12f * scaleVal;
-        // Trunk
-        cube({basePos.x, basePos.y + trunkH*0.5f, basePos.z}, {trunkW, trunkH, trunkW}, cWood);
-        // Foliage levels (flat wide umbrella shape)
-        cube({basePos.x, basePos.y + trunkH + 0.10f, basePos.z}, {1.40f*scaleVal, 0.18f*scaleVal, 1.40f*scaleVal}, cGreen);
-        cube({basePos.x, basePos.y + trunkH + 0.28f, basePos.z}, {0.90f*scaleVal, 0.12f*scaleVal, 0.90f*scaleVal}, cGreen * 1.15f);
-    };
-
-    drawAcacia({-3.2f, -1.11f, -4.5f}, 1.10f); // Left tree near oasis
-    drawAcacia({ 3.0f, -1.11f, -4.2f}, 1.05f); // Right tree
-    drawAcacia({-5.2f, -1.11f, -7.0f}, 0.95f); // Far left tree
-    drawAcacia({ 5.0f, -1.11f, -6.8f}, 0.90f); // Far right tree
-
-    // ====================================================
-    //  5. SAGUARO CACTI
-    // ====================================================
-    auto drawCactus = [&](float cx, float cz, float hVal) {
-        // Main stem
-        cube({cx, -1.11f + hVal*0.5f, cz}, {0.09f, hVal, 0.09f}, cCactus);
-        // Left arm (elbow + vertical arm)
-        cube({cx - 0.12f, -1.11f + hVal*0.55f, cz}, {0.16f, 0.08f, 0.08f}, cCactus);
-        cube({cx - 0.20f, -1.11f + hVal*0.72f, cz}, {0.08f, hVal*0.35f, 0.08f}, cCactus);
-        // Right arm
-        cube({cx + 0.12f, -1.11f + hVal*0.42f, cz}, {0.16f, 0.08f, 0.08f}, cCactus);
-        cube({cx + 0.20f, -1.11f + hVal*0.58f, cz}, {0.08f, hVal*0.32f, 0.08f}, cCactus);
-    };
-    drawCactus(-2.0f, -2.5f, 0.85f);  // Left side close cactus
-    drawCactus( 2.2f, -2.8f, 0.95f);  // Right side close cactus
-    drawCactus( 5.5f, -5.0f, 1.20f);  // Far right cactus
-
-    // ====================================================
-    //  6. ROCK CLUSTERS
-    // ====================================================
-    // Clustered around the oasis pool
-    cube({ 1.30f, -1.11f, -2.3f}, {0.24f, 0.16f, 0.22f}, cStone);
-    cube({ 1.45f, -1.11f, -2.0f}, {0.18f, 0.10f, 0.18f}, cLightStone);
-    cube({-1.35f, -1.11f, -2.1f}, {0.30f, 0.14f, 0.20f}, cStone);
-    cube({-1.45f, -1.11f, -1.6f}, {0.16f, 0.08f, 0.16f}, cLightStone);
-
-    // ====================================================
-    //  7. CAMPFIRE (Right of water pool)
-    // ====================================================
-    const float fireX =  1.00f;
-    const float fireZ = -1.20f;
-    // Crossed logs
-    cube({fireX - 0.05f, -1.11f, fireZ}, {0.30f, 0.05f, 0.05f}, cWood);
-    cube({fireX + 0.05f, -1.11f, fireZ}, {0.05f, 0.05f, 0.30f}, cWood);
-    // Flickering fire sparks
-    float fTime = time * 7.5f;
-    float flameH = 0.12f + 0.06f * std::sin(fTime);
-    cube({fireX, -1.05f + flameH*0.5f, fireZ}, {0.10f, flameH, 0.10f}, cFireOrange);
-    cube({fireX, -1.02f + flameH*0.7f, fireZ}, {0.06f, flameH*0.6f, 0.06f}, cFireRed);
-    // Additive glow
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-    glDepthMask(GL_FALSE);
-    cube({fireX, -0.95f, fireZ}, {0.28f, 0.35f, 0.28f}, glm::vec3(0.25f, 0.10f, 0.01f));
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-
-    // ====================================================
-    //  8. FIREFLIES / OASIS MAGIC PARTICLES (Rising over water)
+    //  2. SERVER RACKS (With blinky lights flanking back wall)
     // ====================================================
     for (int i = 0; i < 4; ++i) {
-        float fOffset = float(i) * 1.5f;
-        float pTime = time * 0.8f + fOffset;
-        float py = -1.08f + std::fmod(pTime, 1.2f);
-        float px = std::sin(pTime * 2.8f) * 0.40f + (float(i - 2) * 0.35f);
-        float pz = -2.30f + std::cos(pTime * 2.0f) * 0.40f;
-        // Fade out as they rise
-        float scale = 0.024f * (1.2f - (py + 1.08f));
-        cube({px, py, pz}, {scale, scale, scale}, cSun * 1.20f);
+        float x = (i < 2) ? -4.5f - i*1.2f : 3.3f + (i-2)*1.2f;
+        float z = -6.5f;
+        // Server cabinet body
+        cube({x, 0.60f, z}, {0.80f, 3.40f, 0.80f}, cServerRack);
+
+        // Blinking indicator LEDs (stacked vertically)
+        for (int r = 0; r < 6; ++r) {
+            float blink = 0.5f + 0.5f * std::sin(time * (5.0f + r) + x);
+            glm::vec3 ledCol = (r % 3 == 0) ? cLedRed : ((r % 3 == 1) ? cLedGreen : cHoloBlue);
+            cube({x - 0.32f, -0.60f + r*0.48f, z + 0.41f}, {0.06f, 0.06f, 0.03f}, ledCol * (blink > 0.4f ? 1.0f : 0.15f));
+            cube({x + 0.32f, -0.60f + r*0.48f, z + 0.41f}, {0.06f, 0.06f, 0.03f}, ledCol * (blink > 0.6f ? 0.15f : 1.0f));
+        }
     }
 
     // ====================================================
-    //  9. RUSTIC SCREEN STRUCTURE + LIVE WEBCAM FEED
+    //  3. HOLOGRAPHIC INCLINED PROJECTION TABLE
     // ====================================================
-    const float scrY = 0.90f;
-    const float scrZ = -4.8f;
-    const float sW = 3.6f, sH = 2.2f;
+    const float tblX =  0.0f;
+    const float tblY = -0.70f;
+    const float tblZ = -3.5f;
 
-    // Side rustic wooden pillars
-    cube({-(sW*0.5f + 0.10f), scrY, scrZ}, {0.16f, 2.70f, 0.16f}, cWood); // Left pillar
-    cube({ (sW*0.5f + 0.10f), scrY, scrZ}, {0.16f, 2.70f, 0.16f}, cWood); // Right pillar
-    // Top crossbeam
-    cube({0.0f, scrY + sH*0.5f + 0.10f, scrZ}, {sW + 0.36f, 0.16f, 0.16f}, cWood);
+    // Pedestal column
+    cube({tblX, tblY, tblZ}, {0.55f, 0.85f, 0.55f}, cConsole);
+    // Table surface plate (cyber hexagon shape simulated by overlapping boxes)
+    cube({tblX, tblY + 0.42f, tblZ}, {1.60f, 0.08f, 1.20f}, cConsole * 0.8f);
+    cube({tblX, tblY + 0.42f, tblZ}, {1.20f, 0.08f, 1.60f}, cConsole * 0.8f);
 
-    // Weathered stone base block under the screen
-    cube({0.0f, -0.85f, scrZ}, {2.80f, 0.50f, 0.50f}, cStone);
+    // Glowing core in the center of the table (source of the hologram)
+    cube({tblX, tblY + 0.47f, tblZ}, {0.28f, 0.04f, 0.28f}, cHoloBlue);
 
-    // Screen backing (black frame)
-    cube({0.0f, scrY, scrZ + 0.04f}, {sW + 0.04f, sH + 0.04f, 0.04f}, {0.02f, 0.02f, 0.02f});
+    // Concentric neon rings flat on the table
+    glm::mat4 tblM = glm::translate(glm::mat4(1.0f), {tblX, tblY + 0.48f, tblZ});
+    glm::mat4 mvpT = projection * view * tblM;
+    drawOrbit3D(mvpT, 0.68f, cHoloBlue, 32, 2.0f);
+    drawOrbit3D(mvpT, 0.48f, cHoloPurple, 24, 1.5f);
 
-    // Live camera feed screen
+    // Dynamic scanning ring pulsing outwards from core
+    float pulseT = std::fmod(time * 0.42f, 0.68f);
+    drawOrbit3D(mvpT, pulseT, cHoloBlue * 0.7f, 32, 1.5f);
+
+    // ====================================================
+    //  4. TILTED FLOATING CAMERA SCREEN (HOLOGRAM FEED)
+    //  Rotated backward around X-axis for floating look
+    // ====================================================
+    const float scrY = 0.55f;
+    const float scrZ = -3.40f;
+    const float sW = 2.45f, sH = 1.50f;
+
+    // Glowing coordinate axes floating around screen
+    cube({tblX - sW*0.62f, scrY, scrZ}, {0.02f, sH * 0.8f, 0.02f}, cHoloBlue * 0.6f);
+    cube({tblX + sW*0.62f, scrY, scrZ}, {0.02f, sH * 0.8f, 0.02f}, cHoloPurple * 0.6f);
+
+    // Tilted Model matrix: translation -> rotateX(-22 deg) -> scale
+    glm::mat4 sm = glm::translate(glm::mat4(1.0f), {tblX, scrY, scrZ});
+    sm = glm::rotate(sm, glm::radians(-22.0f), {1.0f, 0.0f, 0.0f});
+
+    // Hologram bezel frame (cyan glass border)
+    glm::mat4 frameM = glm::scale(sm, {sW + 0.12f, sH + 0.12f, 0.04f});
+    renderCube(frameM, view, projection, cHoloBlue * 0.45f);
+
+    // Additive projection cone from the table core to the screen
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glDepthMask(GL_FALSE);
+    // Projection volume
+    cube({tblX, tblY + 0.65f, tblZ + 0.05f}, {0.20f + (time*0.01f), 0.50f, 0.20f}, cHoloBlue * 0.08f);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    // Live webcam feed screen projected inside the frame (rotated)
     {
-        glm::mat4 sm = glm::scale(
-            glm::translate(glm::mat4(1.0f), {0.0f, scrY, scrZ + 0.08f}),
-            {sW, sH, 0.01f});
-        renderTexturedQuad(sm, view, projection);
+        glm::mat4 screenM = glm::scale(sm, {sW, sH, 0.01f});
+        renderTexturedQuad(screenM, view, projection);
     }
 }
 
@@ -762,36 +716,175 @@ void StereoRenderer::renderRGB(const glm::mat4& model, const glm::mat4& view,
 
 
 void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& projection) {
-    // Render a large dark grey floor plane
-    glm::mat4 floorModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-    floorModel = glm::scale(floorModel, glm::vec3(30.0f, 0.1f, 30.0f));
-    renderCube(floorModel, view, projection, glm::vec3(0.2f, 0.2f, 0.2f));
+    float time = (float)glfwGetTime();
 
-    // Render a virtual gallery of columns around the user
-    std::vector<glm::vec3> positions = {
-        glm::vec3(-4.0f, 0.0f, -4.0f),
-        glm::vec3(4.0f, 0.0f, -4.0f),
-        glm::vec3(-4.0f, 0.0f,  4.0f),
-        glm::vec3(4.0f, 0.0f,  4.0f),
-        glm::vec3(0.0f, 1.0f, -7.0f),
-        glm::vec3(-6.0f, 0.5f, 0.0f),
-        glm::vec3(6.0f, 0.5f,  0.0f)
+    // Compact helper lambda for solid cubes
+    auto cube = [&](glm::vec3 pos, glm::vec3 sc, glm::vec3 col) {
+        glm::mat4 m = glm::scale(glm::translate(glm::mat4(1.0f), pos), sc);
+        renderCube(m, view, projection, col);
     };
 
-    std::vector<glm::vec3> colors = {
-        glm::vec3(0.9f, 0.2f, 0.2f), // Red
-        glm::vec3(0.2f, 0.8f, 0.2f), // Green
-        glm::vec3(0.2f, 0.2f, 0.9f), // Blue
-        glm::vec3(0.9f, 0.9f, 0.2f), // Yellow
-        glm::vec3(0.9f, 0.2f, 0.9f), // Purple
-        glm::vec3(0.2f, 0.9f, 0.9f), // Cyan
-        glm::vec3(0.9f, 0.5f, 0.1f)  // Orange
+    // Color Palette
+    const glm::vec3 cSand      {0.84f, 0.69f, 0.44f}; // Warm desert sand
+    const glm::vec3 cDarkSand  {0.78f, 0.63f, 0.38f}; // Shadowed dune sand
+    const glm::vec3 cSky       {0.92f, 0.48f, 0.28f}; // Sunset orange sky
+    const glm::vec3 cSun       {1.00f, 0.88f, 0.35f}; // Golden sun
+    const glm::vec3 cWood      {0.33f, 0.21f, 0.11f}; // Dark rustic wood beams
+    const glm::vec3 cStone     {0.45f, 0.44f, 0.46f}; // Weathered grey stone
+    const glm::vec3 cLightStone{0.55f, 0.54f, 0.56f}; // Highlighted stone
+    const glm::vec3 cGreen     {0.18f, 0.48f, 0.22f}; // Acacia flat foliage
+    const glm::vec3 cWater     {0.08f, 0.52f, 0.68f}; // Blue oasis pool
+    const glm::vec3 cCloud     {0.95f, 0.72f, 0.65f}; // Warm pink sunset clouds
+    const glm::vec3 cCactus    {0.25f, 0.55f, 0.20f}; // Green cactus body
+    const glm::vec3 cFireOrange{1.00f, 0.45f, 0.05f}; // Glowing fire orange
+    const glm::vec3 cFireRed   {0.90f, 0.15f, 0.10f}; // Glowing fire red
+    const glm::vec3 cTent      {0.75f, 0.65f, 0.50f}; // Bedouin tent canvas
+    const glm::vec3 cDarkInside{0.15f, 0.12f, 0.10f}; // Tent inner darkness
+
+    // ====================================================
+    //  1. ENVIRONMENT & SKY (Floor, Sunset Sky, Sun)
+    // ====================================================
+    cube({0.0f, -1.15f, -3.0f}, {40.f, 0.08f, 40.f}, cSand); // Expanded Floor plane
+    cube({0.0f,  3.20f, -14.8f}, {40.f, 10.0f, 0.08f}, cSky); // Wide back skybox wall
+    
+    // Golden sun low on horizon (pulsates slightly)
+    float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
+    cube({0.0f, 0.25f, -14.6f}, {2.80f * sunPulse, 2.80f * sunPulse, 0.05f}, cSun);
+
+    // ====================================================
+    //  2. TWINKLING STARS IN SKY
+    // ====================================================
+    for (int i = 0; i < 35; ++i) {
+        float x = std::sin(float(i) * 142.12f) * 18.0f;
+        float y = std::cos(float(i) * 85.43f) * 4.0f + 3.0f;
+        float z = -14.2f;
+        float twinkle = 0.3f + 0.7f * std::sin(time * 4.0f + float(i));
+        cube({x, y, z}, {0.06f, 0.06f, 0.06f}, glm::vec3(0.9f, 0.95f, 1.0f) * twinkle);
+    }
+
+    // ====================================================
+    //  3. THREE INTERCONNECTED OASIS WATER POOLS
+    // ====================================================
+    cube({ 0.0f, -1.11f, -2.5f}, {3.2f, 0.01f, 3.4f}, cWater);      // Central pool
+    cube({-3.2f, -1.11f, -5.2f}, {2.0f, 0.01f, 2.0f}, cWater);      // Left secondary pool
+    cube({-1.6f, -1.11f, -3.8f}, {1.4f, 0.01f, 1.4f}, cWater * 1.1f); // Connecting stream
+
+    // ====================================================
+    //  4. DRIFTING CLOUDS
+    // ====================================================
+    auto drawCloud = [&](float baseStartX, float y, float z, float speed, float sizeScale) {
+        float x = baseStartX + std::fmod(time * speed, 30.0f);
+        if (x > 15.0f) x = -15.0f + (x - 15.0f);
+        cube({x, y, z}, {2.20f * sizeScale, 0.45f * sizeScale, 0.60f * sizeScale}, cCloud);
+        cube({x + 0.40f * sizeScale, y + 0.20f * sizeScale, z}, {1.30f * sizeScale, 0.40f * sizeScale, 0.50f * sizeScale}, cCloud * 1.10f);
+    };
+    drawCloud(-8.0f,  3.60f, -14.0f, 0.20f, 1.20f);
+    drawCloud( 5.0f,  4.20f, -14.0f, 0.12f, 0.95f);
+    drawCloud(-12.0f, 2.80f, -14.0f, 0.25f, 1.35f);
+
+    // ====================================================
+    //  5. GEOMETRIC LOW-POLY SAND DUNES
+    // ====================================================
+    cube({-5.8f, -0.90f, -7.5f}, {6.0f, 0.65f, 6.5f}, cDarkSand);  // Left dune
+    cube({ 5.8f, -0.85f, -8.0f}, {6.5f, 0.75f, 6.0f}, cDarkSand);  // Right dune
+    cube({ 0.0f, -0.95f, -12.0f}, {10.0f, 0.58f, 3.8f}, cSand);    // Far center dune
+    cube({-10.0f, -0.80f, -1.0f}, {7.0f, 0.50f, 8.0f}, cDarkSand); // Side left dune
+    cube({ 10.0f, -0.80f, -1.0f}, {7.0f, 0.50f, 8.0f}, cDarkSand); // Side right dune
+
+    // ====================================================
+    //  6. PALM GROVES & ACACIA TREES
+    // ====================================================
+    auto drawAcacia = [&](glm::vec3 basePos, float scaleVal) {
+        float trunkH = 1.50f * scaleVal;
+        float trunkW = 0.12f * scaleVal;
+        cube({basePos.x, basePos.y + trunkH*0.5f, basePos.z}, {trunkW, trunkH, trunkW}, cWood);
+        cube({basePos.x, basePos.y + trunkH + 0.10f, basePos.z}, {1.40f*scaleVal, 0.18f*scaleVal, 1.40f*scaleVal}, cGreen);
+        cube({basePos.x, basePos.y + trunkH + 0.28f, basePos.z}, {0.90f*scaleVal, 0.12f*scaleVal, 0.90f*scaleVal}, cGreen * 1.15f);
     };
 
-    for (size_t i = 0; i < positions.size(); ++i) {
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), positions[i]);
-        model = glm::scale(model, glm::vec3(0.6f, 2.0f, 0.6f));
-        renderCube(model, view, projection, colors[i]);
+    drawAcacia({-3.2f, -1.11f, -4.5f}, 1.10f); // Left tree near oasis
+    drawAcacia({ 3.0f, -1.11f, -4.2f}, 1.05f); // Right tree
+    drawAcacia({-5.2f, -1.11f, -7.0f}, 0.95f); // Far left tree
+    drawAcacia({ 5.0f, -1.11f, -6.8f}, 0.90f); // Far right tree
+    drawAcacia({-1.5f, -1.11f, -6.5f}, 1.00f); // Middle left tree
+
+    // ====================================================
+    //  7. SAGUARO CACTI
+    // ====================================================
+    auto drawCactus = [&](float cx, float cz, float hVal) {
+        cube({cx, -1.11f + hVal*0.5f, cz}, {0.09f, hVal, 0.09f}, cCactus);
+        cube({cx - 0.12f, -1.11f + hVal*0.55f, cz}, {0.16f, 0.08f, 0.08f}, cCactus);
+        cube({cx - 0.20f, -1.11f + hVal*0.72f, cz}, {0.08f, hVal*0.35f, 0.08f}, cCactus);
+        cube({cx + 0.12f, -1.11f + hVal*0.42f, cz}, {0.16f, 0.08f, 0.08f}, cCactus);
+        cube({cx + 0.20f, -1.11f + hVal*0.58f, cz}, {0.08f, hVal*0.32f, 0.08f}, cCactus);
+    };
+    drawCactus(-2.0f, -2.5f, 0.85f);  // Close left cactus
+    drawCactus( 2.2f, -2.8f, 0.95f);  // Close right cactus
+    drawCactus( 5.5f, -5.0f, 1.20f);  // Far right cactus
+    drawCactus(-6.5f, -3.5f, 1.05f);  // Left side dune cactus
+
+    // ====================================================
+    //  8. ANCIENT RUINS (Egyptian Obelisk & Broken Columns)
+    // ====================================================
+    // Standing Obelisk on the right
+    const float obX = 4.2f, obZ = -5.0f;
+    cube({obX, -0.90f, obZ}, {0.60f, 0.25f, 0.60f}, cStone);       // Plinth base
+    cube({obX, -0.05f, obZ}, {0.35f, 1.50f, 0.35f}, cStone * 0.9f); // Tall shaft
+    cube({obX,  0.75f, obZ}, {0.20f, 0.20f, 0.20f}, cLightStone);  // Pyramidion cap
+
+    // Broken pillar lying in the sand on the left
+    cube({-3.2f, -1.06f, -1.8f}, {1.40f, 0.26f, 0.26f}, cStone);
+    cube({-2.4f, -1.06f, -1.8f}, {0.30f, 0.29f, 0.29f}, cLightStone); // ring detail
+
+    // Weathered Rock Clusters around water pools
+    cube({ 1.30f, -1.11f, -2.3f}, {0.24f, 0.16f, 0.22f}, cStone);
+    cube({ 1.45f, -1.11f, -2.0f}, {0.18f, 0.10f, 0.18f}, cLightStone);
+    cube({-1.35f, -1.11f, -2.1f}, {0.30f, 0.14f, 0.20f}, cStone);
+    cube({-1.45f, -1.11f, -1.6f}, {0.16f, 0.08f, 0.16f}, cLightStone);
+    cube({-3.80f, -1.11f, -5.5f}, {0.25f, 0.12f, 0.25f}, cStone);
+
+    // ====================================================
+    //  9. BEDOUIN TENT
+    // ====================================================
+    const float tentX = -2.5f, tentZ = -1.2f;
+    // Main tent canvas body
+    cube({tentX, -0.65f, tentZ}, {1.30f, 0.90f, 1.50f}, cTent);
+    // Dark interior entry slit
+    cube({tentX, -0.75f, tentZ + 0.74f}, {0.90f, 0.70f, 0.04f}, cDarkInside);
+    // Wooden structural posts holding tent canopy
+    cube({tentX - 0.60f, -0.65f, tentZ + 0.72f}, {0.05f, 0.90f, 0.05f}, cWood);
+    cube({tentX + 0.60f, -0.65f, tentZ + 0.72f}, {0.05f, 0.90f, 0.05f}, cWood);
+
+    // ====================================================
+    //  10. CAMPFIRE
+    // ====================================================
+    const float fireX =  1.00f;
+    const float fireZ = -1.20f;
+    cube({fireX - 0.05f, -1.11f, fireZ}, {0.30f, 0.05f, 0.05f}, cWood);
+    cube({fireX + 0.05f, -1.11f, fireZ}, {0.05f, 0.05f, 0.30f}, cWood);
+    float fTime = time * 7.5f;
+    float flameH = 0.12f + 0.06f * std::sin(fTime);
+    cube({fireX, -1.05f + flameH*0.5f, fireZ}, {0.10f, flameH, 0.10f}, cFireOrange);
+    cube({fireX, -1.02f + flameH*0.7f, fireZ}, {0.06f, flameH*0.6f, 0.06f}, cFireRed);
+    // Glow
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glDepthMask(GL_FALSE);
+    cube({fireX, -0.95f, fireZ}, {0.35f, 0.40f, 0.35f}, glm::vec3(0.25f, 0.10f, 0.01f));
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    // ====================================================
+    //  11. FIREFLIES / OASIS MAGIC PARTICLES (Rising over pool)
+    // ====================================================
+    for (int i = 0; i < 6; ++i) {
+        float fOffset = float(i) * 1.2f;
+        float pTime = time * 0.7f + fOffset;
+        float py = -1.08f + std::fmod(pTime, 1.3f);
+        float px = std::sin(pTime * 2.5f) * 0.50f + (float(i - 3) * 0.40f);
+        float pz = -2.50f + std::cos(pTime * 1.8f) * 0.50f;
+        float scale = 0.026f * (1.3f - (py + 1.08f));
+        cube({px, py, pz}, {scale, scale, scale}, cSun * 1.30f);
     }
 }
 
