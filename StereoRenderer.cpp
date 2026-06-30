@@ -32,13 +32,16 @@ const std::string quadFragmentShaderSrc = R"(
 )";
 
 // 3D Object Shader (For rendering primitives)
+// 3D Object Shader (For rendering primitives)
 const std::string objectVertexShaderSrc = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
     uniform mat4 uMVP;
-    uniform mat4 uModel; // Model matrix for world space coordinates
+    uniform mat4 uModel;
+    out vec3 vLocalPos;
     out vec3 vWorldPos;
     void main() {
+        vLocalPos = aPos;
         vWorldPos = (uModel * vec4(aPos, 1.0)).xyz;
         gl_Position = uMVP * vec4(aPos, 1.0);
     }
@@ -46,26 +49,35 @@ const std::string objectVertexShaderSrc = R"(
 
 const std::string objectFragmentShaderSrc = R"(
     #version 330 core
+    in vec3 vLocalPos;
     in vec3 vWorldPos;
     out vec4 FragColor;
     uniform vec3 uColor;
+    uniform mat4 uModel;
     void main() {
-        // Calculate dynamic face normal using screen derivatives (perfect low-poly style shading)
-        vec3 normal = vec3(0.0, 1.0, 0.0);
-        vec3 dx = dFdx(vWorldPos);
-        vec3 dy = dFdy(vWorldPos);
-        if (length(dx) > 0.0001 && length(dy) > 0.0001) {
-            normal = normalize(cross(dx, dy));
+        // Analytical local normal for unit cube based on local coordinates
+        vec3 localNormal = vec3(0.0, 1.0, 0.0);
+        vec3 absPos = abs(vLocalPos);
+        float eps = 0.49;
+        if (absPos.x > eps) {
+            localNormal = vec3(sign(vLocalPos.x), 0.0, 0.0);
+        } else if (absPos.y > eps) {
+            localNormal = vec3(0.0, sign(vLocalPos.y), 0.0);
+        } else if (absPos.z > eps) {
+            localNormal = vec3(0.0, 0.0, sign(vLocalPos.z));
         }
 
-        // Sunset directional light matching the desert sun orientation
-        vec3 lightDir = normalize(vec3(0.1, 0.35, -1.0));
-        float diff = max(dot(normal, lightDir), 0.0);
+        // Transform normal to world space using the model matrix
+        vec3 worldNormal = normalize(mat3(uModel) * localNormal);
+
+        // Sunset sun light direction (matches the setting sun)
+        vec3 lightDir = normalize(vec3(0.0, 0.35, -1.0));
+        float diff = max(dot(worldNormal, lightDir), 0.0);
 
         // Ambient lighting
-        float ambient = 0.32;
+        float ambient = 0.38;
 
-        vec3 finalColor = uColor * (ambient + diff * 0.68);
+        vec3 finalColor = uColor * (ambient + diff * 0.62);
         FragColor = vec4(finalColor, 1.0);
     }
 )";
