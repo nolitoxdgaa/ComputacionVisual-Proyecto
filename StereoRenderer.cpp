@@ -582,145 +582,89 @@ void StereoRenderer::renderSolarSystem(const glm::mat4& arModel,
     }
 }
 
-// ------------------------------------------------------------------ renderSpaceshipBridge
-void StereoRenderer::renderSpaceshipBridge(const glm::mat4& view,
-                                           const glm::mat4& projection, float time) {
+// ------------------------------------------------------------------ renderDesertOasis
+void StereoRenderer::renderDesertOasis(const glm::mat4& view,
+                                       const glm::mat4& projection, float time) {
     // Compact helper lambda for solid cubes
     auto cube = [&](glm::vec3 pos, glm::vec3 sc, glm::vec3 col) {
         glm::mat4 m = glm::scale(glm::translate(glm::mat4(1.0f), pos), sc);
         renderCube(m, view, projection, col);
     };
 
-    // Color definitions
-    const glm::vec3 cMetalFloor   {0.07f, 0.08f, 0.12f}; // dark blue-steel flooring
-    const glm::vec3 cMetalWall    {0.05f, 0.05f, 0.08f}; // metallic panels
-    const glm::vec3 cConsoleBody  {0.14f, 0.16f, 0.22f}; // control panel carbon/metal
-    const glm::vec3 cWindshield   {0.08f, 0.11f, 0.15f}; // frame borders
-    const glm::vec3 cHoloBlue     {0.00f, 0.70f, 1.00f}; // primary sci-fi cyan
-    const glm::vec3 cHoloGreen    {0.00f, 1.00f, 0.40f}; // radar/status green
-    const glm::vec3 cButtonRed    {0.90f, 0.10f, 0.20f};
-    const glm::vec3 cButtonYellow {0.95f, 0.75f, 0.05f};
+    // Color Palette
+    const glm::vec3 cSand      {0.84f, 0.69f, 0.44f}; // Warm desert sand
+    const glm::vec3 cDarkSand  {0.78f, 0.63f, 0.38f}; // Shadowed dune sand
+    const glm::vec3 cSky       {0.92f, 0.48f, 0.28f}; // Sunset orange sky
+    const glm::vec3 cSun       {1.00f, 0.88f, 0.35f}; // Golden sun
+    const glm::vec3 cWood      {0.33f, 0.21f, 0.11f}; // Dark rustic wood beams
+    const glm::vec3 cStone     {0.45f, 0.44f, 0.46f}; // Weathered grey stone base
+    const glm::vec3 cGreen     {0.18f, 0.48f, 0.22f}; // Acacia flat foliage
+    const glm::vec3 cWater     {0.08f, 0.52f, 0.68f}; // Blue oasis pool
 
     // ====================================================
-    //  1. STARFIELD (Drawn behind the windshield screen)
-    //  Deterministic layout using std::sin/cos so they stay fixed
+    //  1. ENVIRONMENT (Floor, Sunset Sky, Sun)
     // ====================================================
-    for (int i = 0; i < 40; ++i) {
-        float x = std::sin(float(i) * 342.12f) * 12.0f;
-        float y = std::cos(float(i) * 115.43f) * 5.0f + 1.2f;
-        float z = -8.0f - std::abs(std::sin(float(i) * 874.32f)) * 8.0f;
-        // Blinking animation
-        float blink = 0.4f + 0.6f * std::sin(time * 3.5f + float(i));
-        cube({x, y, z}, {0.08f, 0.08f, 0.08f}, glm::vec3(0.9f, 0.95f, 1.0f) * blink);
-    }
+    cube({0.0f, -1.15f, -3.0f}, {20.f, 0.08f, 20.f}, cSand); // Floor desert plane
+    cube({0.0f,  3.20f, -9.8f}, {20.f, 9.00f, 0.08f}, cSky);  // Back skybox wall
+    // Golden sun low on horizon (pulsates slightly)
+    float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
+    cube({0.0f, 0.35f, -9.6f}, {1.60f * sunPulse, 1.60f * sunPulse, 0.05f}, cSun);
+
+    // Oasis water pool at the front center of the screen
+    cube({0.0f, -1.11f, -2.3f}, {2.4f, 0.01f, 2.6f}, cWater);
 
     // ====================================================
-    //  2. BRIDGE CABIN / STRUCTURAL ROOM
+    //  2. GEOMETRIC LOW-POLY SAND DUNES
     // ====================================================
-    cube({0.0f, -1.15f, -3.0f}, {16.f, 0.08f, 16.f}, cMetalFloor); // Floor
-    cube({0.0f,  3.50f, -3.0f}, {16.f, 0.08f, 16.f}, cMetalWall);  // Ceiling
-    cube({-7.8f, 1.20f, -3.0f}, {0.10f, 5.0f, 16.f},  cMetalWall);  // Left bulkhead
-    cube({ 7.8f, 1.20f, -3.0f}, {0.10f, 5.0f, 16.f},  cMetalWall);  // Right bulkhead
-    // Front window frame supports
-    cube({-2.30f,  1.20f, -4.6f}, {0.12f, 4.80f, 0.12f}, cWindshield);
-    cube({ 2.30f,  1.20f, -4.6f}, {0.12f, 4.80f, 0.12f}, cWindshield);
-    cube({ 0.00f,  2.80f, -4.6f}, {5.20f, 0.12f, 0.12f}, cWindshield);
-    cube({ 0.00f, -0.65f, -4.6f}, {5.20f, 0.12f, 0.12f}, cWindshield);
-
-    // Diagonal support frames for cockpit aesthetic
-    {
-        glm::mat4 mDiagL = glm::translate(glm::mat4(1.0f), {-3.5f, 1.8f, -4.0f});
-        mDiagL = glm::rotate(mDiagL, glm::radians(35.0f), {0, 0, 1});
-        mDiagL = glm::scale(mDiagL, {0.10f, 3.20f, 0.10f});
-        renderCube(mDiagL, view, projection, cWindshield);
-
-        glm::mat4 mDiagR = glm::translate(glm::mat4(1.0f), {3.5f, 1.8f, -4.0f});
-        mDiagR = glm::rotate(mDiagR, glm::radians(-35.0f), {0, 0, 1});
-        mDiagR = glm::scale(mDiagR, {0.10f, 3.20f, 0.10f});
-        renderCube(mDiagR, view, projection, cWindshield);
-    }
+    cube({-3.8f, -0.90f, -6.5f}, {4.0f, 0.45f, 4.5f}, cDarkSand);  // Left dune
+    cube({ 3.8f, -0.85f, -7.0f}, {4.5f, 0.55f, 4.0f}, cDarkSand);  // Right dune
+    cube({ 0.0f, -0.95f, -9.0f}, {6.5f, 0.38f, 2.8f}, cSand);      // Far center dune
 
     // ====================================================
-    //  3. MAIN SCREEN FRAME + LIVE WEBCAM FEED (WINDSHEILD)
+    //  3. STYLIZED LOW-POLY ACACIA / OASIS TREES
+    //  Trunk = brown vertical box; Canopy = flat green wide boxes
     // ====================================================
-    const float scrY = 1.05f;
-    const float scrZ = -4.5f;
-    const float sW = 4.2f, sH = 2.4f;
+    auto drawAcacia = [&](glm::vec3 basePos, float scaleVal) {
+        float trunkH = 1.50f * scaleVal;
+        float trunkW = 0.12f * scaleVal;
+        // Trunk
+        cube({basePos.x, basePos.y + trunkH*0.5f, basePos.z}, {trunkW, trunkH, trunkW}, cWood);
+        // Foliage levels (flat wide umbrella shape)
+        cube({basePos.x, basePos.y + trunkH + 0.10f, basePos.z}, {1.40f*scaleVal, 0.18f*scaleVal, 1.40f*scaleVal}, cGreen);
+        cube({basePos.x, basePos.y + trunkH + 0.28f, basePos.z}, {0.90f*scaleVal, 0.12f*scaleVal, 0.90f*scaleVal}, cGreen * 1.15f);
+    };
 
-    // Glowing border frame
-    cube({0.0f, scrY, scrZ}, {sW + 0.18f, sH + 0.18f, 0.08f}, cWindshield);
-    // Dark glass underlay
-    cube({0.0f, scrY, scrZ + 0.04f}, {sW + 0.02f, sH + 0.02f, 0.04f}, {0.01f, 0.01f, 0.03f});
-    // Live webcam feed projected on the main viewscreen
+    drawAcacia({-3.2f, -1.11f, -4.5f}, 1.10f); // Left tree near oasis
+    drawAcacia({ 3.0f, -1.11f, -4.2f}, 1.05f); // Right tree
+    drawAcacia({-5.2f, -1.11f, -7.0f}, 0.95f); // Far left tree
+    drawAcacia({ 5.0f, -1.11f, -6.8f}, 0.90f); // Far right tree
+
+    // ====================================================
+    //  4. RUSTIC SCREEN STRUCTURE + LIVE WEBCAM FEED
+    // ====================================================
+    const float scrY = 0.90f;
+    const float scrZ = -4.8f;
+    const float sW = 3.6f, sH = 2.2f;
+
+    // Side rustic wooden pillars
+    cube({-(sW*0.5f + 0.10f), scrY, scrZ}, {0.16f, 2.70f, 0.16f}, cWood); // Left pillar
+    cube({ (sW*0.5f + 0.10f), scrY, scrZ}, {0.16f, 2.70f, 0.16f}, cWood); // Right pillar
+    // Top crossbeam
+    cube({0.0f, scrY + sH*0.5f + 0.10f, scrZ}, {sW + 0.36f, 0.16f, 0.16f}, cWood);
+
+    // Weathered stone base block under the screen
+    cube({0.0f, -0.85f, scrZ}, {2.80f, 0.50f, 0.50f}, cStone);
+
+    // Screen backing (black frame)
+    cube({0.0f, scrY, scrZ + 0.04f}, {sW + 0.04f, sH + 0.04f, 0.04f}, {0.02f, 0.02f, 0.02f});
+
+    // Live camera feed screen
     {
         glm::mat4 sm = glm::scale(
             glm::translate(glm::mat4(1.0f), {0.0f, scrY, scrZ + 0.08f}),
-            {sW - 0.06f, sH - 0.06f, 0.01f});
+            {sW, sH, 0.01f});
         renderTexturedQuad(sm, view, projection);
     }
-
-    // Neon ambient back-light under console edge
-    cube({0.0f, -0.68f, -4.2f}, {5.0f, 0.03f, 0.08f}, cHoloBlue);
-
-    // ====================================================
-    //  4. COMMAND CONSOLES (Left, center and right)
-    // ====================================================
-    const float conY = -0.75f;
-    const float conZ = -3.2f;
-
-    // Center Console
-    cube({0.0f, conY, conZ}, {1.8f, 0.40f, 1.2f}, cConsoleBody);
-    // Left console desk (tilted panel)
-    cube({-2.3f, conY, conZ}, {1.5f, 0.40f, 1.2f}, cConsoleBody);
-    // Right console desk (tilted panel)
-    cube({2.3f, conY, conZ}, {1.5f, 0.40f, 1.2f}, cConsoleBody);
-
-    // Floor neon strip panels (run from the back to the front)
-    cube({-4.5f, -1.12f, -3.0f}, {0.15f, 0.01f, 12.0f}, cHoloBlue);
-    cube({ 4.5f, -1.12f, -3.0f}, {0.15f, 0.01f, 12.0f}, cHoloBlue);
-
-    // ====================================================
-    //  5. STATUS BUTTONS / KEYBOARD INDICATORS
-    // ====================================================
-    // Left desk buttons
-    cube({-2.0f, conY + 0.22f, conZ - 0.2f}, {0.12f, 0.03f, 0.12f}, cButtonRed);
-    cube({-2.4f, conY + 0.22f, conZ - 0.2f}, {0.12f, 0.03f, 0.12f}, cHoloGreen);
-    cube({-2.2f, conY + 0.22f, conZ - 0.4f}, {0.12f, 0.03f, 0.12f}, cHoloBlue);
-    // Center control panel buttons/sliders
-    for (int i = 0; i < 4; ++i) {
-        float x = -0.5f + i * 0.35f;
-        cube({x, conY + 0.22f, conZ - 0.3f}, {0.08f, 0.03f, 0.14f}, cButtonYellow);
-        cube({x, conY + 0.22f, conZ - 0.1f}, {0.08f, 0.03f, 0.08f}, (i % 2 == 0) ? cButtonRed : cHoloBlue);
-    }
-    // Right desk keyboard array
-    for (int col = 0; col < 3; ++col) {
-        for (int row = 0; row < 2; ++row) {
-            float rx = 1.9f + col * 0.22f;
-            float rz = -3.4f + row * 0.22f;
-            cube({rx, conY + 0.21f, rz}, {0.10f, 0.015f, 0.10f}, cHoloBlue * (0.4f + 0.6f * std::cos(time * 2.0f + float(col + row))));
-        }
-    }
-
-    // ====================================================
-    //  6. HOLOGRAPHIC PULSING RADAR SCREEN
-    //  Flat concentric rings pulsing dynamically on console
-    // ====================================================
-    // Left console radar
-    glm::mat4 radML = glm::translate(glm::mat4(1.0f), {-2.4f, conY + 0.21f, conZ});
-    radML = glm::rotate(radML, glm::radians(5.0f), {1, 0, 0}); // tilt console surface angle
-    glm::mat4 mvpL = projection * view * radML;
-    drawOrbit3D(mvpL, 0.30f, cHoloGreen, 32, 1.5f);
-    drawOrbit3D(mvpL, 0.12f, cHoloGreen, 24, 1.0f);
-    float pulseL = std::fmod(time * 0.28f, 0.30f);
-    drawOrbit3D(mvpL, pulseL, cHoloGreen * 0.6f, 32, 2.0f);
-
-    // Right console secondary scanner
-    glm::mat4 radMR = glm::translate(glm::mat4(1.0f), {2.4f, conY + 0.21f, conZ - 0.2f});
-    radMR = glm::rotate(radMR, glm::radians(5.0f), {1, 0, 0});
-    glm::mat4 mvpR = projection * view * radMR;
-    drawOrbit3D(mvpR, 0.25f, cHoloBlue, 28, 1.5f);
-    float pulseR = std::fmod(time * 0.35f, 0.25f);
-    drawOrbit3D(mvpR, pulseR, cHoloBlue * 0.7f, 28, 2.0f);
 }
 
 // ------------------------------------------------------------------ rgb helper

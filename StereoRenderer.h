@@ -44,10 +44,10 @@ public:
                               int frameW, int frameH);
 
     // ---------------------------------------------------------------
-    // AV Mode 3 – Spaceship Bridge / Sci-Fi Command Center
-    // The camera feed is displayed as the main panoramic view screen.
+    // AV Mode 3 – Desert Oasis / Savanna (Low-Poly)
+    // The camera feed is displayed on a rustic screen structure in a desert landscape.
     // ---------------------------------------------------------------
-    void renderSpaceshipBridge(const glm::mat4& view, const glm::mat4& projection, float time);
+    void renderDesertOasis(const glm::mat4& view, const glm::mat4& projection, float time);
 
     // ---------------------------------------------------------------
     // VR Mode 4 – basic virtual scene (used inside stereo callback too)

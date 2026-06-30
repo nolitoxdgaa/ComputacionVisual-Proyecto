@@ -212,14 +212,14 @@ int main() {
 
             // --------------------------------------------------
             // MODO 3: VIRTUALIDAD AUMENTADA
-            // Entorno 3D virtual de cabina de nave espacial con
-            // el feed de camara proyectado como pantalla de comandos.
+            // Entorno 3D virtual de Oasis en el Desierto con el
+            // feed de la camara proyectado en una pantalla rustica.
             // --------------------------------------------------
             case ContinuumState::AUGMENTED_VIRTUALITY:
                 if (cameraOk) {
                     renderer.updateVideoTexture(tracker.getFrame());
                 }
-                renderer.renderSpaceshipBridge(virtualView, projection, (float)glfwGetTime());
+                renderer.renderDesertOasis(virtualView, projection, (float)glfwGetTime());
                 break;
 
             // --------------------------------------------------
