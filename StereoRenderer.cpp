@@ -142,7 +142,8 @@ const std::string rgbFragmentShaderSrc = R"(
 
 StereoRenderer::StereoRenderer() 
     : quadProgram(0), objectProgram(0), holoProgram(0), overlayProgram(0), rgbProgram(0),
-      quadVAO(0), quadVBO(0), cubeVAO(0), cubeVBO(0), overlayVAO(0), overlayVBO(0),
+      quadVAO(0), quadVBO(0), cubeVAO(0), cubeVBO(0),
+      overlayVAO(0), overlayVBO(0), ring3dVAO(0), ring3dVBO(0),
       videoTextureId(0),
       quadTexLocation(-1), quadMVPLocation(-1),
       objMVPLocation(-1), objColorLocation(-1),
@@ -162,6 +163,8 @@ StereoRenderer::~StereoRenderer() {
     if (cubeVBO)    glDeleteBuffers(1, &cubeVBO);
     if (overlayVAO) glDeleteVertexArrays(1, &overlayVAO);
     if (overlayVBO) glDeleteBuffers(1, &overlayVBO);
+    if (ring3dVAO)  glDeleteVertexArrays(1, &ring3dVAO);
+    if (ring3dVBO)  glDeleteBuffers(1, &ring3dVBO);
     if (videoTextureId) glDeleteTextures(1, &videoTextureId);
 }
 
@@ -284,13 +287,21 @@ bool StereoRenderer::initialize() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // --- Setup Dynamic 2-D Overlay VAO (scan laser + reticles) ---
-    // Buffer is empty at init; we upload line vertices each frame dynamically.
     glGenVertexArrays(1, &overlayVAO);
     glGenBuffers(1, &overlayVBO);
     glBindVertexArray(overlayVAO);
     glBindBuffer(GL_ARRAY_BUFFER, overlayVBO);
     glBufferData(GL_ARRAY_BUFFER, 256 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // --- Setup 3-D Orbit Ring VAO (solar system, 3-float XYZ vertices) ---
+    glGenVertexArrays(1, &ring3dVAO);
+    glGenBuffers(1, &ring3dVBO);
+    glBindVertexArray(ring3dVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ring3dVBO);
+    glBufferData(GL_ARRAY_BUFFER, 128 * 3 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     glBindVertexArray(0);
@@ -368,41 +379,6 @@ void StereoRenderer::drawLines2D(const std::vector<float>& verts,
     glEnable(GL_DEPTH_TEST);
 }
 
-// ------------------------------------------------------------------ hologram
-void StereoRenderer::renderHologram(const glm::mat4& arModel,
-                                     const glm::mat4& arProj, float time) {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE);     // see inside the transparent faces
-
-    glUseProgram(holoProgram);
-
-    // Scale: slightly bigger than the marker for visual impact
-    glm::mat4 model = glm::scale(arModel, glm::vec3(0.1f));
-
-    glm::mat4 mvp = arProj * model;
-    glUniformMatrix4fv(holoMVPLocation,  1, GL_FALSE, glm::value_ptr(mvp));
-    glUniform1f(holoTimeLocation,  time);
-    // Cyan hologram color
-    glm::vec3 cyan(0.05f, 0.85f, 1.0f);
-    glUniform3fv(holoColorLocation, 1, glm::value_ptr(cyan));
-
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
-
-    // Second pass: bright wireframe outline for a "hard edge" glow effect
-    glm::vec3 brightCyan(0.3f, 1.0f, 1.0f);
-    glUniform3fv(holoColorLocation, 1, glm::value_ptr(brightCyan));
-    glLineWidth(1.5f);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glBindVertexArray(cubeVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glBindVertexArray(0);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    glDisable(GL_BLEND);
-}
 
 // ------------------------------------------------------------------ scan laser
 void StereoRenderer::renderScanLaser(const std::vector<cv::Point2f>& corners2D,
@@ -474,6 +450,265 @@ void StereoRenderer::renderCornerReticles(const std::vector<cv::Point2f>& corner
     }
 }
 
+// ------------------------------------------------------------------ drawOrbit3D
+void StereoRenderer::drawOrbit3D(const glm::mat4& mvp, float radius,
+                                  glm::vec3 color, int segs, float lineWidth) {
+    const float PI = glm::pi<float>();
+    std::vector<float> verts;
+    verts.reserve(segs * 3);
+    for (int i = 0; i < segs; ++i) {
+        float theta = 2.0f * PI * (float)i / (float)segs;
+        verts.push_back(radius * std::cos(theta));  // X
+        verts.push_back(0.0f);                       // Y (circle in XZ plane)
+        verts.push_back(radius * std::sin(theta));  // Z
+    }
+
+    glUseProgram(objectProgram);
+    glUniformMatrix4fv(objMVPLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniform3fv(objColorLocation,   1, glm::value_ptr(color));
+    glLineWidth(lineWidth);
+
+    glBindVertexArray(ring3dVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ring3dVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0,
+                    (GLsizeiptr)(verts.size() * sizeof(float)), verts.data());
+    glDrawArrays(GL_LINE_LOOP, 0, segs);
+    glBindVertexArray(0);
+}
+
+// ------------------------------------------------------------------ renderSolarSystem
+void StereoRenderer::renderSolarSystem(const glm::mat4& arModel,
+                                        const glm::mat4& arProj, float time) {
+    // Identity view: arProj already encodes the calibrated camera matrix
+    const glm::mat4 VIEW = glm::mat4(1.0f);
+
+    // ---- Orbit definitions: {radius, tilt(deg), orbital speed, neon color, Saturn ring?} ----
+    struct Orbit {
+        float  radius;
+        float  tiltDeg;
+        float  speed;
+        glm::vec3 color;
+        bool   hasRing;
+    };
+    const Orbit orbits[3] = {
+        {0.08f, 12.0f, 1.8f, {0.0f, 1.0f, 1.0f},  false},  // inner:  cyan
+        {0.14f, 28.0f, 1.0f, {1.0f, 0.5f, 0.0f},  false},  // middle: orange
+        {0.21f, 50.0f, 0.5f, {0.75f,0.2f, 1.0f},  true },  // outer:  purple/Saturn
+    };
+
+    // ====================================================
+    // 1. ORBIT RINGS – drawn first so the star glow is on top
+    // ====================================================
+    for (const auto& orb : orbits) {
+        // Tilt the ring plane around the X axis
+        glm::mat4 tiltM = glm::rotate(glm::mat4(1.0f),
+                                       glm::radians(orb.tiltDeg), {1,0,0});
+        glm::mat4 mvp   = arProj * arModel * tiltM;
+
+        // Bright ring pass
+        drawOrbit3D(mvp, orb.radius, orb.color, 64, 2.0f);
+
+        // Wide soft-glow pass (additive blend)
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glDepthMask(GL_FALSE);
+        drawOrbit3D(mvp, orb.radius, orb.color * 0.20f, 64, 5.0f);
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+    }
+
+    // ====================================================
+    // 2. CENTRAL STAR – concentric glow cubes, additive blend
+    // ====================================================
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glDepthMask(GL_FALSE);
+
+    struct GlowLayer { float sc; glm::vec3 col; };
+    const GlowLayer starLayers[] = {
+        {0.18f, {0.04f, 0.02f, 0.00f}},
+        {0.11f, {0.16f, 0.08f, 0.01f}},
+        {0.065f,{0.50f, 0.28f, 0.02f}},
+        {0.038f,{1.00f, 0.80f, 0.20f}},
+        {0.020f,{1.00f, 1.00f, 0.90f}},
+    };
+    // Star "breathes" with a slow sine pulse
+    float pulse = 1.0f + 0.18f * std::sin(time * 5.2f);
+    for (const auto& sl : starLayers) {
+        glm::mat4 sm = glm::scale(arModel, glm::vec3(sl.sc * pulse));
+        renderCube(sm, VIEW, arProj, sl.col);
+    }
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    // ====================================================
+    // 3. PLANETS – animated along their orbits
+    // ====================================================
+    for (int i = 0; i < 3; ++i) {
+        const Orbit& orb = orbits[i];
+        float angle = time * orb.speed;
+        float r     = orb.radius;
+        float tilt  = glm::radians(orb.tiltDeg);
+
+        // Compute position on the tilted ellipse
+        float px     = r * std::cos(angle);
+        float pzFlat = r * std::sin(angle);
+        float py     = pzFlat * std::sin(tilt);
+        float pz     = pzFlat * std::cos(tilt);
+        glm::vec3 ppos(px, py, pz);
+
+        // Solid planet body
+        glm::mat4 pm = glm::scale(glm::translate(arModel, ppos), glm::vec3(0.022f));
+        renderCube(pm, VIEW, arProj, orb.color);
+
+        // Planet glow (additive, bigger)
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glDepthMask(GL_FALSE);
+        renderCube(glm::scale(glm::translate(arModel, ppos), glm::vec3(0.055f)),
+                   VIEW, arProj, orb.color * 0.18f);
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+
+        // Saturn rings on the outer planet (3 concentric orbit circles)
+        if (orb.hasRing) {
+            glm::mat4 satBase = glm::translate(arModel, ppos);
+            // Tilt Saturn's disk 30° for visibility
+            satBase = glm::rotate(satBase, glm::radians(30.0f), {0, 0, 1});
+            for (float dr : {0.030f, 0.038f, 0.048f}) {
+                drawOrbit3D(arProj * satBase, dr, orb.color, 48, 1.5f);
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------ renderZenGallery
+void StereoRenderer::renderZenGallery(const glm::mat4& view,
+                                       const glm::mat4& projection, float time) {
+    // Compact lambdas
+    auto cube = [&](glm::vec3 pos, glm::vec3 sc, glm::vec3 col) {
+        glm::mat4 m = glm::scale(glm::translate(glm::mat4(1.0f), pos), sc);
+        renderCube(m, view, projection, col);
+    };
+
+    // ---- Palette ----
+    const glm::vec3 cMarble  {0.055f, 0.055f, 0.085f};  // dark blue-grey marble floor
+    const glm::vec3 cStone   {0.038f, 0.035f, 0.055f};  // near-black stone columns
+    const glm::vec3 cWall    {0.030f, 0.025f, 0.048f};  // very dark wall
+    const glm::vec3 cCeil    {0.010f, 0.010f, 0.018f};  // nearly black ceiling
+    const glm::vec3 cGold    {0.820f, 0.600f, 0.080f};  // rich gold
+    const glm::vec3 cDkGold  {0.200f, 0.140f, 0.015f};  // dark gold inner mat
+    const glm::vec3 cBlack   {0.010f, 0.010f, 0.012f};  // screen black bg
+
+    // ====================================================
+    //  ROOM
+    // ====================================================
+    cube({0.0f, -1.10f, -3.0f}, {18.f, 0.06f, 20.f}, cMarble);  // floor
+    cube({0.0f,  4.20f, -3.0f}, {18.f, 0.06f, 20.f}, cCeil);    // ceiling
+    cube({0.0f,  1.60f, -9.5f}, {18.f, 12.f, 0.08f}, cWall);    // back wall
+    cube({-9.0f, 1.60f, -3.0f}, {0.08f,12.f, 20.f}, cWall);     // left wall
+    cube({ 9.0f, 1.60f, -3.0f}, {0.08f,12.f, 20.f}, cWall);     // right wall
+
+    // Marble tile grid (subtle depth cue)
+    for (int i = -4; i <= 4; ++i) {
+        float x = i * 2.0f;
+        cube({x, -1.04f, -4.5f}, {0.025f, 0.008f, 14.f}, {0.025f,0.025f,0.04f});
+    }
+    for (int j = 0; j <= 7; ++j) {
+        float z = -0.5f - j * 1.8f;
+        cube({0.f, -1.04f, z}, {18.f, 0.008f, 0.025f}, {0.025f,0.025f,0.04f});
+    }
+
+    // ====================================================
+    //  COLUMNS  (3 pairs flanking the central aisle)
+    // ====================================================
+    const float colH = 5.3f, colR = 0.19f;
+    const float colCY = -1.10f + colH * 0.5f;
+    for (float z : {-2.0f, -4.5f, -7.0f}) {
+        for (float sx : {-2.6f, 2.6f}) {
+            cube({sx, colCY, z}, {colR, colH, colR}, cStone);           // shaft
+            cube({sx, -1.07f,  z}, {colR+0.10f, 0.05f, colR+0.10f}, cStone); // base cap
+            cube({sx,  colH - 1.12f, z}, {colR+0.10f, 0.07f, colR+0.10f}, cStone); // top cap
+        }
+    }
+
+    // Ceiling cross-beams connecting column tops
+    for (float z : {-2.0f, -4.5f, -7.0f}) {
+        cube({0.0f, colH - 1.08f, z}, {5.6f, 0.06f, 0.19f}, {0.04f,0.035f,0.06f});
+    }
+    // Longitudinal beams along each column line
+    for (float sx : {-2.6f, 2.6f}) {
+        cube({sx, colH - 1.08f, -4.5f}, {0.19f, 0.06f, 7.5f}, {0.04f,0.035f,0.06f});
+    }
+
+    // ====================================================
+    //  GOLDEN PAINTING FRAME  +  LIVE CAMERA FEED
+    //  Eye level = camera y = 1.2 → frame center at y=1.2
+    // ====================================================
+    const float paintY = 1.20f;
+    const float paintZ = -4.8f;
+    const float fW = 3.5f, fH = 2.6f;
+
+    // Outer thick gold moulding
+    cube({0.f, paintY, paintZ},          {fW+0.38f, fH+0.38f, 0.18f}, cGold);
+    // Inner decorative gold channel
+    cube({0.f, paintY, paintZ+0.06f},    {fW+0.14f, fH+0.14f, 0.12f}, cDkGold);
+    // Dark screen backing (the canvas)
+    cube({0.f, paintY, paintZ+0.11f},    {fW+0.02f, fH+0.02f, 0.06f}, cBlack);
+    // Live camera feed texture
+    {
+        glm::mat4 sm = glm::scale(
+            glm::translate(glm::mat4(1.0f), {0.f, paintY, paintZ+0.16f}),
+            {fW-0.06f, fH-0.06f, 0.01f});
+        renderTexturedQuad(sm, view, projection);
+    }
+
+    // ====================================================
+    //  GOLDEN AMBILIGHT GLOW behind painting (additive)
+    // ====================================================
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glDepthMask(GL_FALSE);
+    // Inner glow halo
+    cube({0.f, paintY, paintZ-0.12f},
+         {fW+2.2f, fH+1.8f, 0.10f}, {0.12f, 0.09f, 0.0f});
+    // Soft outer corona
+    cube({0.f, paintY, paintZ-0.25f},
+         {fW+4.5f, fH+3.5f, 0.08f}, {0.04f, 0.03f, 0.0f});
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
+    // ====================================================
+    //  CANDLES – pairs beside each column, flickering flame
+    // ====================================================
+    float flicker = 0.72f + 0.28f * std::sin(time * 7.3f + 0.4f);
+    float flicker2 = 0.68f + 0.32f * std::sin(time * 6.1f + 1.7f); // slightly different
+    const glm::vec3 cWax   {0.55f, 0.45f, 0.35f};
+
+    auto candle_obj = [&](float x, float zz, float fl) {
+        cube({x, -0.82f, zz}, {0.05f, 0.55f, 0.05f}, cWax);                    // wax body
+        cube({x, -0.52f, zz}, {0.03f, 0.07f, 0.03f}, glm::vec3(1.0f,0.6f,0.1f)*fl); // flame
+        // Additive candle glow
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        glDepthMask(GL_FALSE);
+        cube({x, -0.50f, zz}, {0.22f, 0.28f, 0.22f}, glm::vec3(0.2f,0.12f,0.02f)*fl);
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+    };
+
+    for (float z : {-1.5f, -4.0f, -6.5f}) {
+        candle_obj(-3.5f, z, flicker);
+        candle_obj( 3.5f, z, flicker2);
+    }
+
+    // ====================================================
+    //  ALTAR / PEDESTAL at the far end for depth
+    // ====================================================
+    cube({0.f, -0.62f, -9.0f}, {2.2f, 1.0f, 0.9f}, cStone);    // pedestal
+    cube({0.f,  0.26f, -9.0f}, {0.32f, 0.32f, 0.32f}, {0.09f,0.07f,0.11f}); // object on top
+}
+
 // ------------------------------------------------------------------ rgb helper
 void StereoRenderer::renderRGB(const glm::mat4& model, const glm::mat4& view,
                                 const glm::mat4& projection,
@@ -488,142 +723,7 @@ void StereoRenderer::renderRGB(const glm::mat4& model, const glm::mat4& view,
     glBindVertexArray(0);
 }
 
-// ------------------------------------------------------------------ gamer setup (Mode 3)
-void StereoRenderer::renderGamerSetup(const glm::mat4& view,
-                                       const glm::mat4& projection, float time) {
-    // ---- compact lambdas ----
-    auto cube = [&](glm::vec3 pos, glm::vec3 scale, glm::vec3 color) {
-        glm::mat4 m = glm::translate(glm::mat4(1.0f), pos);
-        m = glm::scale(m, scale);
-        renderCube(m, view, projection, color);
-    };
-    auto rgb = [&](glm::vec3 pos, glm::vec3 scale, float hue) {
-        glm::mat4 m = glm::translate(glm::mat4(1.0f), pos);
-        m = glm::scale(m, scale);
-        renderRGB(m, view, projection, time, hue);
-    };
 
-    // ---- color palette ----
-    // Walls get a tiny purple tint so they are subtly visible (not pure black)
-    const glm::vec3 cFloor  {0.04f, 0.02f, 0.07f};
-    const glm::vec3 cWall   {0.05f, 0.02f, 0.09f};
-    const glm::vec3 cDesk   {0.10f, 0.07f, 0.14f};  // dark carbon-purple
-    const glm::vec3 cDevice {0.06f, 0.06f, 0.10f};  // near-black peripheral body
-    const glm::vec3 cMon    {0.05f, 0.05f, 0.05f};  // monitor frame charcoal
-
-    // =============================================
-    //  ROOM  —  camera sits at y=1.2, z=+2
-    //  All scene items face camera looking at -Z
-    // =============================================
-    cube({0.0f, -1.15f,  0.0f}, {14.f, 0.08f, 14.f}, cFloor);   // Floor
-    cube({0.0f,  2.0f,  -6.5f}, {14.f, 6.0f,  0.10f}, cWall);   // Back wall
-    cube({-7.0f, 2.0f,  -1.0f}, {0.10f,6.0f, 12.0f}, cWall);    // Left wall
-    cube({ 7.0f, 2.0f,  -1.0f}, {0.10f,6.0f, 12.0f}, cWall);    // Right wall
-    cube({0.0f,  5.0f,   0.0f}, {14.f, 0.08f, 14.f}, cFloor);   // Ceiling
-
-    // =============================================
-    //  DESK  —  y=-0.55 puts surface just below camera
-    // =============================================
-    cube({0.0f, -0.55f, -2.5f},  {4.8f, 0.08f, 2.4f}, cDesk);   // Desk surface
-    // 4 thin metal legs
-    cube({-2.3f, -0.98f, -1.6f}, {0.08f, 0.86f, 0.08f}, cDevice);
-    cube({ 2.3f, -0.98f, -1.6f}, {0.08f, 0.86f, 0.08f}, cDevice);
-    cube({-2.3f, -0.98f, -3.5f}, {0.08f, 0.86f, 0.08f}, cDevice);
-    cube({ 2.3f, -0.98f, -3.5f}, {0.08f, 0.86f, 0.08f}, cDevice);
-
-    // =============================================
-    //  MONITOR
-    //  Monitor center at y=0.55 (above desk surface), z=-3.8
-    //  Frame: 2.0w x 1.3h; Screen inset
-    // =============================================
-    const float monZ = -3.8f;
-    const float monY =  0.55f;
-    cube({0.0f, monY, monZ},      {2.10f, 1.40f, 0.09f}, cMon);          // Outer frame
-    cube({0.0f, monY, monZ+0.06f},{1.85f, 1.18f, 0.04f}, {0.01f,0.01f,0.01f}); // Bezel
-    // Stand: column + base
-    cube({0.0f, monY-0.78f, monZ},{0.11f, 0.55f, 0.11f}, cDevice);
-    cube({0.0f, monY-1.04f, monZ},{0.60f, 0.05f, 0.38f}, cDevice);
-    // Live camera feed on screen
-    {
-        glm::mat4 sm = glm::translate(glm::mat4(1.0f), {0.0f, monY, monZ+0.12f});
-        sm = glm::scale(sm, {1.80f, 1.12f, 0.01f});
-        renderTexturedQuad(sm, view, projection);
-    }
-
-    // =============================================
-    //  PC TOWER  (right side of desk, on floor)
-    // =============================================
-    const float towerX = 3.0f;
-    cube({towerX, -0.40f, -3.5f},  {0.55f, 1.50f, 0.55f}, cDevice);   // Body
-    // Glass side panel (thin, very dark blue)
-    cube({towerX-0.29f,-0.40f,-3.5f},{0.02f,1.36f,0.48f},{0.03f,0.03f,0.10f});
-
-    // =============================================
-    //  HEADPHONE STAND  (left of monitor on desk)
-    // =============================================
-    cube({-2.0f, -0.35f, -3.5f}, {0.08f, 0.95f, 0.08f}, cDevice);  // pole
-    cube({-2.0f,  0.15f, -3.5f}, {0.55f, 0.06f, 0.22f}, cDevice);  // arch
-    cube({-2.0f, -0.62f, -3.5f}, {0.50f, 0.05f, 0.32f}, cDevice);  // base
-
-    // =============================================
-    //  RGB OBJECTS
-    // =============================================
-
-    // 1. Desk front-edge RGB strip (the most visible accent, seen head-on)
-    rgb({0.0f, -0.51f, -1.35f}, {4.8f, 0.08f, 0.015f}, 0.0f);
-
-    // 2. LED underglow — thin horizontal line under desk, floor-facing
-    rgb({0.0f, -0.60f, -2.5f},  {4.8f, 0.012f, 0.05f}, 0.05f);
-
-    // 3. Ambilight halo behind monitor (3 strips: top, left side, right side)
-    rgb({0.0f,  monY+0.82f, monZ-0.06f}, {2.30f, 0.025f, 0.08f}, 0.0f);  // top
-    rgb({-(1.18f), monY, monZ-0.06f},    {0.025f,1.45f,  0.08f}, 0.0f);  // left
-    rgb({ (1.18f), monY, monZ-0.06f},    {0.025f,1.45f,  0.08f}, 0.0f);  // right
-
-    // 4. Keyboard — compact, sits on desk
-    rgb({-0.3f, -0.50f, -2.15f}, {1.35f, 0.04f, 0.50f}, 0.33f);
-
-    // 5. Mouse — small, to the right of keyboard
-    rgb({ 0.95f, -0.51f, -2.10f},{0.15f, 0.05f, 0.25f}, 0.55f);
-
-    // 6. PC tower: RGB front panel fan strip
-    rgb({towerX-0.29f, -0.40f, -3.5f}, {0.02f, 1.10f, 0.42f}, 0.25f);
-    // PC tower: top RGB accent
-    rgb({towerX, 0.37f, -3.5f},  {0.55f, 0.020f, 0.55f}, 0.30f);
-
-    // 7. Monitor stand base accent
-    rgb({0.0f, monY-1.07f, monZ},{0.58f, 0.018f, 0.36f}, 0.70f);
-
-    // 8. Headphone arch RGB band
-    rgb({-2.0f, 0.20f, -3.5f},  {0.53f, 0.035f, 0.18f}, 0.62f);
-
-    // =============================================
-    //  NANOLEAF PANELS  —  LEFT WALL  (x ≈ -6.9)
-    //  Panels face right (+X normal), clearly on wall,
-    //  at various y/z positions forming a cluster.
-    //  Using {depth, height, width} because panel is thin in X.
-    // =============================================
-    const float nX  = -6.85f;  // just in front of left wall
-    const float nS  =  0.48f;  // panel face size
-    const float nTh =  0.05f;  // panel thickness (X dimension)
-
-    // Cluster: 3 columns x 4 rows (staggered)
-    // Column A  z=-1.8
-    rgb({nX, 0.20f, -1.80f}, {nTh, nS, nS}, 0.000f);
-    rgb({nX, 0.72f, -1.80f}, {nTh, nS, nS}, 0.083f);
-    rgb({nX, 1.24f, -1.80f}, {nTh, nS, nS}, 0.167f);
-    rgb({nX, 1.76f, -1.80f}, {nTh, nS, nS}, 0.250f);
-    // Column B  z=-2.40  (offset y by half a panel)
-    rgb({nX, 0.46f, -2.40f}, {nTh, nS, nS}, 0.042f);
-    rgb({nX, 0.98f, -2.40f}, {nTh, nS, nS}, 0.125f);
-    rgb({nX, 1.50f, -2.40f}, {nTh, nS, nS}, 0.208f);
-    rgb({nX, 2.02f, -2.40f}, {nTh, nS, nS}, 0.292f);
-    // Column C  z=-3.00
-    rgb({nX, 0.20f, -3.00f}, {nTh, nS, nS}, 0.333f);
-    rgb({nX, 0.72f, -3.00f}, {nTh, nS, nS}, 0.417f);
-    rgb({nX, 1.24f, -3.00f}, {nTh, nS, nS}, 0.500f);
-    rgb({nX, 1.76f, -3.00f}, {nTh, nS, nS}, 0.583f);
-}
 
 void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& projection) {
     // Render a large dark grey floor plane

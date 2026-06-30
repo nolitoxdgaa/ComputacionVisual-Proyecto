@@ -28,22 +28,26 @@ public:
     void renderCube(const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection, const glm::vec3& color);
 
     // ---------------------------------------------------------------
-    // AR Mode 2 – hologram + scan laser + PnP corner reticles
+    // AR Mode 2 – Mini Solar System + scan laser + PnP corner reticles
     // ---------------------------------------------------------------
-    void renderHologram(const glm::mat4& arModel, const glm::mat4& arProj, float time);
 
+    // Renders an animated mini solar system (star + 3 orbital rings + planets)
+    // floating over the detected ArUco marker.
+    void renderSolarSystem(const glm::mat4& arModel, const glm::mat4& arProj, float time);
+
+    // Sweeping laser scan line over the marker bounding box.
     void renderScanLaser(const std::vector<cv::Point2f>& corners2D,
                          int frameW, int frameH, float time);
 
+    // Coloured crosshair reticles at the 4 ArUco corner positions.
     void renderCornerReticles(const std::vector<cv::Point2f>& corners2D,
                               int frameW, int frameH);
 
     // ---------------------------------------------------------------
-    // AV Mode 3 – RGB Gamer Setup scene
-    // time: glfwGetTime(), used to drive the RGB color cycling and animations.
-    // The monitor screen uses the video texture already uploaded via updateVideoTexture().
+    // AV Mode 3 – Zen Temple / Floating Art Gallery
+    // The camera feed is displayed as a painting inside a golden frame.
     // ---------------------------------------------------------------
-    void renderGamerSetup(const glm::mat4& view, const glm::mat4& projection, float time);
+    void renderZenGallery(const glm::mat4& view, const glm::mat4& projection, float time);
 
     // ---------------------------------------------------------------
     // VR Mode 4 – basic virtual scene (used inside stereo callback too)
@@ -63,21 +67,27 @@ private:
     // ---- 2-D overlay helper (scan laser + reticles) ----
     void drawLines2D(const std::vector<float>& verts, const glm::vec4& color, float lineWidth = 2.0f);
 
-    // ---- RGB cube helper (gamer scene) ----
+    // ---- 3-D orbit ring helper (solar system) ----
+    // Draws a circle of `segs` line segments in the XZ plane, transformed by mvp.
+    void drawOrbit3D(const glm::mat4& mvp, float radius, glm::vec3 color,
+                     int segs = 64, float lineWidth = 2.0f);
+
+    // ---- RGB cube helper (kept for legacy renderGamerSetup) ----
     void renderRGB(const glm::mat4& model, const glm::mat4& view,
                    const glm::mat4& projection, float time, float hueOffset);
 
     // ---- shader programs ----
     GLuint quadProgram;      // background quad  (video texture, flat)
     GLuint objectProgram;    // solid-color 3D objects
-    GLuint holoProgram;      // hologram (Mode 2)
+    GLuint holoProgram;      // hologram (kept, not used in Mode 2 anymore)
     GLuint overlayProgram;   // 2-D screen-space lines
-    GLuint rgbProgram;       // HSV-cycling RGB objects (Mode 3)
+    GLuint rgbProgram;       // HSV-cycling RGB objects
 
     // ---- VAO / VBO ----
     GLuint quadVAO,    quadVBO;
     GLuint cubeVAO,    cubeVBO;
-    GLuint overlayVAO, overlayVBO;
+    GLuint overlayVAO, overlayVBO;  // 2-D flat lines (scan laser / reticles)
+    GLuint ring3dVAO,  ring3dVBO;   // 3-D orbit ring lines (solar system)
 
     // ---- textures ----
     GLuint videoTextureId;

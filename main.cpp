@@ -196,8 +196,8 @@ int main() {
 
                         float now = (float)glfwGetTime();
 
-                        // 1. Holograma animado (cubo cyan con efecto seno + scanlines)
-                        renderer.renderHologram(arModel, arProj, now);
+                        // 1. Sistema Solar miniatura holográfico interactivo
+                        renderer.renderSolarSystem(arModel, arProj, now);
 
                         // 2. Laser de escaneo que barre el marcador de arriba a abajo
                         renderer.renderScanLaser(tracker.getLastCorners(),
@@ -212,14 +212,14 @@ int main() {
 
             // --------------------------------------------------
             // MODO 3: VIRTUALIDAD AUMENTADA
-            // Entorno 3D virtual de setup gamer RGB con el feed
-            // de la camara proyectado en el monitor virtual.
+            // Entorno 3D virtual de templo Zen con la camara en
+            // vivo proyectada como una pintura dorada flotante.
             // --------------------------------------------------
             case ContinuumState::AUGMENTED_VIRTUALITY:
                 if (cameraOk) {
                     renderer.updateVideoTexture(tracker.getFrame());
                 }
-                renderer.renderGamerSetup(virtualView, projection, (float)glfwGetTime());
+                renderer.renderZenGallery(virtualView, projection, (float)glfwGetTime());
                 break;
 
             // --------------------------------------------------
