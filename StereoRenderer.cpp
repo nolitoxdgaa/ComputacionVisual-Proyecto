@@ -55,29 +55,40 @@ const std::string objectFragmentShaderSrc = R"(
     uniform vec3 uColor;
     uniform mat4 uModel;
     void main() {
-        // Analytical local normal for unit cube based on local coordinates
-        vec3 localNormal = vec3(0.0, 1.0, 0.0);
-        vec3 absPos = abs(vLocalPos);
-        float eps = 0.49;
-        if (absPos.x > eps) {
-            localNormal = vec3(sign(vLocalPos.x), 0.0, 0.0);
-        } else if (absPos.y > eps) {
-            localNormal = vec3(0.0, sign(vLocalPos.y), 0.0);
-        } else if (absPos.z > eps) {
-            localNormal = vec3(0.0, 0.0, sign(vLocalPos.z));
+        // Check if the object color matches any self-luminous objects (Sun, Stars, Flames)
+        bool isLuminous = (uColor.r > 0.98 && uColor.g > 0.85 && uColor.b < 0.40)   // Sun (1.00, 0.88, 0.35)
+                       || (uColor.r > 0.88 && uColor.g > 0.93 && uColor.b > 0.98)   // Stars (0.90, 0.95, 1.00)
+                       || (uColor.r > 0.99 && uColor.g > 0.40 && uColor.b < 0.10)   // Fire Orange (1.00, 0.45, 0.05)
+                       || (uColor.r > 0.88 && uColor.g < 0.20 && uColor.b < 0.15)   // Fire Red (0.90, 0.15, 0.10)
+                       || (uColor.r < 0.10 && uColor.g > 0.78 && uColor.b > 0.98);  // Fire Cyan (0.00, 0.80, 1.00)
+
+        float factor = 1.0;
+        if (!isLuminous) {
+            // Analytical local normal for unit cube
+            vec3 localNormal = vec3(0.0, 1.0, 0.0);
+            vec3 absPos = abs(vLocalPos);
+            float eps = 0.49;
+            if (absPos.x > eps) {
+                localNormal = vec3(sign(vLocalPos.x), 0.0, 0.0);
+            } else if (absPos.y > eps) {
+                localNormal = vec3(0.0, sign(vLocalPos.y), 0.0);
+            } else if (absPos.z > eps) {
+                localNormal = vec3(0.0, 0.0, sign(vLocalPos.z));
+            }
+
+            // Transform normal to world space using the model matrix
+            vec3 worldNormal = normalize(mat3(uModel) * localNormal);
+
+            // Sunset sun light direction (matches the setting sun)
+            vec3 lightDir = normalize(vec3(0.0, 0.35, -1.0));
+            float diff = max(dot(worldNormal, lightDir), 0.0);
+
+            // Ambient lighting
+            float ambient = 0.38;
+            factor = ambient + diff * 0.62;
         }
 
-        // Transform normal to world space using the model matrix
-        vec3 worldNormal = normalize(mat3(uModel) * localNormal);
-
-        // Sunset sun light direction (matches the setting sun)
-        vec3 lightDir = normalize(vec3(0.0, 0.35, -1.0));
-        float diff = max(dot(worldNormal, lightDir), 0.0);
-
-        // Ambient lighting
-        float ambient = 0.38;
-
-        vec3 finalColor = uColor * (ambient + diff * 0.62);
+        vec3 finalColor = uColor * factor;
         FragColor = vec4(finalColor, 1.0);
     }
 )";
@@ -782,7 +793,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     cube({0.0f, -1.15f, 0.0f}, {250.f, 0.08f, 250.f}, cSand); // Massively expanded floor plane (360 degrees)
     
     // Front sunset sky wall (in -Z)
-    cube({0.0f,  3.20f, -14.8f}, {40.f, 10.0f, 0.08f}, cSky); 
+    // Sky wall removed (using seamless glClearColor) 
     // Golden sun low on horizon (pulsates slightly)
     float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
     cube({0.0f, 0.25f, -14.6f}, {2.80f * sunPulse, 2.80f * sunPulse, 0.05f}, cSun);
