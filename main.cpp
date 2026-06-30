@@ -212,14 +212,14 @@ int main() {
 
             // --------------------------------------------------
             // MODO 3: VIRTUALIDAD AUMENTADA
-            // Entorno 3D virtual de templo Zen con la camara en
-            // vivo proyectada como una pintura dorada flotante.
+            // Entorno 3D virtual de cabina de nave espacial con
+            // el feed de camara proyectado como pantalla de comandos.
             // --------------------------------------------------
             case ContinuumState::AUGMENTED_VIRTUALITY:
                 if (cameraOk) {
                     renderer.updateVideoTexture(tracker.getFrame());
                 }
-                renderer.renderZenGallery(virtualView, projection, (float)glfwGetTime());
+                renderer.renderSpaceshipBridge(virtualView, projection, (float)glfwGetTime());
                 break;
 
             // --------------------------------------------------

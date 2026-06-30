@@ -44,10 +44,10 @@ public:
                               int frameW, int frameH);
 
     // ---------------------------------------------------------------
-    // AV Mode 3 – Zen Temple / Floating Art Gallery
-    // The camera feed is displayed as a painting inside a golden frame.
+    // AV Mode 3 – Spaceship Bridge / Sci-Fi Command Center
+    // The camera feed is displayed as the main panoramic view screen.
     // ---------------------------------------------------------------
-    void renderZenGallery(const glm::mat4& view, const glm::mat4& projection, float time);
+    void renderSpaceshipBridge(const glm::mat4& view, const glm::mat4& projection, float time);
 
     // ---------------------------------------------------------------
     // VR Mode 4 – basic virtual scene (used inside stereo callback too)

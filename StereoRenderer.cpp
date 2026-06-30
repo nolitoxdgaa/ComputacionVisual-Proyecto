@@ -582,131 +582,145 @@ void StereoRenderer::renderSolarSystem(const glm::mat4& arModel,
     }
 }
 
-// ------------------------------------------------------------------ renderZenGallery
-void StereoRenderer::renderZenGallery(const glm::mat4& view,
-                                       const glm::mat4& projection, float time) {
-    // Compact lambdas
+// ------------------------------------------------------------------ renderSpaceshipBridge
+void StereoRenderer::renderSpaceshipBridge(const glm::mat4& view,
+                                           const glm::mat4& projection, float time) {
+    // Compact helper lambda for solid cubes
     auto cube = [&](glm::vec3 pos, glm::vec3 sc, glm::vec3 col) {
         glm::mat4 m = glm::scale(glm::translate(glm::mat4(1.0f), pos), sc);
         renderCube(m, view, projection, col);
     };
 
-    // ---- Palette ----
-    const glm::vec3 cMarble  {0.055f, 0.055f, 0.085f};  // dark blue-grey marble floor
-    const glm::vec3 cStone   {0.038f, 0.035f, 0.055f};  // near-black stone columns
-    const glm::vec3 cWall    {0.030f, 0.025f, 0.048f};  // very dark wall
-    const glm::vec3 cCeil    {0.010f, 0.010f, 0.018f};  // nearly black ceiling
-    const glm::vec3 cGold    {0.820f, 0.600f, 0.080f};  // rich gold
-    const glm::vec3 cDkGold  {0.200f, 0.140f, 0.015f};  // dark gold inner mat
-    const glm::vec3 cBlack   {0.010f, 0.010f, 0.012f};  // screen black bg
+    // Color definitions
+    const glm::vec3 cMetalFloor   {0.07f, 0.08f, 0.12f}; // dark blue-steel flooring
+    const glm::vec3 cMetalWall    {0.05f, 0.05f, 0.08f}; // metallic panels
+    const glm::vec3 cConsoleBody  {0.14f, 0.16f, 0.22f}; // control panel carbon/metal
+    const glm::vec3 cWindshield   {0.08f, 0.11f, 0.15f}; // frame borders
+    const glm::vec3 cHoloBlue     {0.00f, 0.70f, 1.00f}; // primary sci-fi cyan
+    const glm::vec3 cHoloGreen    {0.00f, 1.00f, 0.40f}; // radar/status green
+    const glm::vec3 cButtonRed    {0.90f, 0.10f, 0.20f};
+    const glm::vec3 cButtonYellow {0.95f, 0.75f, 0.05f};
 
     // ====================================================
-    //  ROOM
+    //  1. STARFIELD (Drawn behind the windshield screen)
+    //  Deterministic layout using std::sin/cos so they stay fixed
     // ====================================================
-    cube({0.0f, -1.10f, -3.0f}, {18.f, 0.06f, 20.f}, cMarble);  // floor
-    cube({0.0f,  4.20f, -3.0f}, {18.f, 0.06f, 20.f}, cCeil);    // ceiling
-    cube({0.0f,  1.60f, -9.5f}, {18.f, 12.f, 0.08f}, cWall);    // back wall
-    cube({-9.0f, 1.60f, -3.0f}, {0.08f,12.f, 20.f}, cWall);     // left wall
-    cube({ 9.0f, 1.60f, -3.0f}, {0.08f,12.f, 20.f}, cWall);     // right wall
-
-    // Marble tile grid (subtle depth cue)
-    for (int i = -4; i <= 4; ++i) {
-        float x = i * 2.0f;
-        cube({x, -1.04f, -4.5f}, {0.025f, 0.008f, 14.f}, {0.025f,0.025f,0.04f});
-    }
-    for (int j = 0; j <= 7; ++j) {
-        float z = -0.5f - j * 1.8f;
-        cube({0.f, -1.04f, z}, {18.f, 0.008f, 0.025f}, {0.025f,0.025f,0.04f});
+    for (int i = 0; i < 40; ++i) {
+        float x = std::sin(float(i) * 342.12f) * 12.0f;
+        float y = std::cos(float(i) * 115.43f) * 5.0f + 1.2f;
+        float z = -8.0f - std::abs(std::sin(float(i) * 874.32f)) * 8.0f;
+        // Blinking animation
+        float blink = 0.4f + 0.6f * std::sin(time * 3.5f + float(i));
+        cube({x, y, z}, {0.08f, 0.08f, 0.08f}, glm::vec3(0.9f, 0.95f, 1.0f) * blink);
     }
 
     // ====================================================
-    //  COLUMNS  (3 pairs flanking the central aisle)
+    //  2. BRIDGE CABIN / STRUCTURAL ROOM
     // ====================================================
-    const float colH = 5.3f, colR = 0.19f;
-    const float colCY = -1.10f + colH * 0.5f;
-    for (float z : {-2.0f, -4.5f, -7.0f}) {
-        for (float sx : {-2.6f, 2.6f}) {
-            cube({sx, colCY, z}, {colR, colH, colR}, cStone);           // shaft
-            cube({sx, -1.07f,  z}, {colR+0.10f, 0.05f, colR+0.10f}, cStone); // base cap
-            cube({sx,  colH - 1.12f, z}, {colR+0.10f, 0.07f, colR+0.10f}, cStone); // top cap
-        }
+    cube({0.0f, -1.15f, -3.0f}, {16.f, 0.08f, 16.f}, cMetalFloor); // Floor
+    cube({0.0f,  3.50f, -3.0f}, {16.f, 0.08f, 16.f}, cMetalWall);  // Ceiling
+    cube({-7.8f, 1.20f, -3.0f}, {0.10f, 5.0f, 16.f},  cMetalWall);  // Left bulkhead
+    cube({ 7.8f, 1.20f, -3.0f}, {0.10f, 5.0f, 16.f},  cMetalWall);  // Right bulkhead
+    // Front window frame supports
+    cube({-2.30f,  1.20f, -4.6f}, {0.12f, 4.80f, 0.12f}, cWindshield);
+    cube({ 2.30f,  1.20f, -4.6f}, {0.12f, 4.80f, 0.12f}, cWindshield);
+    cube({ 0.00f,  2.80f, -4.6f}, {5.20f, 0.12f, 0.12f}, cWindshield);
+    cube({ 0.00f, -0.65f, -4.6f}, {5.20f, 0.12f, 0.12f}, cWindshield);
+
+    // Diagonal support frames for cockpit aesthetic
+    {
+        glm::mat4 mDiagL = glm::translate(glm::mat4(1.0f), {-3.5f, 1.8f, -4.0f});
+        mDiagL = glm::rotate(mDiagL, glm::radians(35.0f), {0, 0, 1});
+        mDiagL = glm::scale(mDiagL, {0.10f, 3.20f, 0.10f});
+        renderCube(mDiagL, view, projection, cWindshield);
+
+        glm::mat4 mDiagR = glm::translate(glm::mat4(1.0f), {3.5f, 1.8f, -4.0f});
+        mDiagR = glm::rotate(mDiagR, glm::radians(-35.0f), {0, 0, 1});
+        mDiagR = glm::scale(mDiagR, {0.10f, 3.20f, 0.10f});
+        renderCube(mDiagR, view, projection, cWindshield);
     }
 
-    // Ceiling cross-beams connecting column tops
-    for (float z : {-2.0f, -4.5f, -7.0f}) {
-        cube({0.0f, colH - 1.08f, z}, {5.6f, 0.06f, 0.19f}, {0.04f,0.035f,0.06f});
-    }
-    // Longitudinal beams along each column line
-    for (float sx : {-2.6f, 2.6f}) {
-        cube({sx, colH - 1.08f, -4.5f}, {0.19f, 0.06f, 7.5f}, {0.04f,0.035f,0.06f});
-    }
-
     // ====================================================
-    //  GOLDEN PAINTING FRAME  +  LIVE CAMERA FEED
-    //  Eye level = camera y = 1.2 → frame center at y=1.2
+    //  3. MAIN SCREEN FRAME + LIVE WEBCAM FEED (WINDSHEILD)
     // ====================================================
-    const float paintY = 1.20f;
-    const float paintZ = -4.8f;
-    const float fW = 3.5f, fH = 2.6f;
+    const float scrY = 1.05f;
+    const float scrZ = -4.5f;
+    const float sW = 4.2f, sH = 2.4f;
 
-    // Outer thick gold moulding
-    cube({0.f, paintY, paintZ},          {fW+0.38f, fH+0.38f, 0.18f}, cGold);
-    // Inner decorative gold channel
-    cube({0.f, paintY, paintZ+0.06f},    {fW+0.14f, fH+0.14f, 0.12f}, cDkGold);
-    // Dark screen backing (the canvas)
-    cube({0.f, paintY, paintZ+0.11f},    {fW+0.02f, fH+0.02f, 0.06f}, cBlack);
-    // Live camera feed texture
+    // Glowing border frame
+    cube({0.0f, scrY, scrZ}, {sW + 0.18f, sH + 0.18f, 0.08f}, cWindshield);
+    // Dark glass underlay
+    cube({0.0f, scrY, scrZ + 0.04f}, {sW + 0.02f, sH + 0.02f, 0.04f}, {0.01f, 0.01f, 0.03f});
+    // Live webcam feed projected on the main viewscreen
     {
         glm::mat4 sm = glm::scale(
-            glm::translate(glm::mat4(1.0f), {0.f, paintY, paintZ+0.16f}),
-            {fW-0.06f, fH-0.06f, 0.01f});
+            glm::translate(glm::mat4(1.0f), {0.0f, scrY, scrZ + 0.08f}),
+            {sW - 0.06f, sH - 0.06f, 0.01f});
         renderTexturedQuad(sm, view, projection);
     }
 
-    // ====================================================
-    //  GOLDEN AMBILIGHT GLOW behind painting (additive)
-    // ====================================================
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-    glDepthMask(GL_FALSE);
-    // Inner glow halo
-    cube({0.f, paintY, paintZ-0.12f},
-         {fW+2.2f, fH+1.8f, 0.10f}, {0.12f, 0.09f, 0.0f});
-    // Soft outer corona
-    cube({0.f, paintY, paintZ-0.25f},
-         {fW+4.5f, fH+3.5f, 0.08f}, {0.04f, 0.03f, 0.0f});
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
+    // Neon ambient back-light under console edge
+    cube({0.0f, -0.68f, -4.2f}, {5.0f, 0.03f, 0.08f}, cHoloBlue);
 
     // ====================================================
-    //  CANDLES – pairs beside each column, flickering flame
+    //  4. COMMAND CONSOLES (Left, center and right)
     // ====================================================
-    float flicker = 0.72f + 0.28f * std::sin(time * 7.3f + 0.4f);
-    float flicker2 = 0.68f + 0.32f * std::sin(time * 6.1f + 1.7f); // slightly different
-    const glm::vec3 cWax   {0.55f, 0.45f, 0.35f};
+    const float conY = -0.75f;
+    const float conZ = -3.2f;
 
-    auto candle_obj = [&](float x, float zz, float fl) {
-        cube({x, -0.82f, zz}, {0.05f, 0.55f, 0.05f}, cWax);                    // wax body
-        cube({x, -0.52f, zz}, {0.03f, 0.07f, 0.03f}, glm::vec3(1.0f,0.6f,0.1f)*fl); // flame
-        // Additive candle glow
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE);
-        glDepthMask(GL_FALSE);
-        cube({x, -0.50f, zz}, {0.22f, 0.28f, 0.22f}, glm::vec3(0.2f,0.12f,0.02f)*fl);
-        glDepthMask(GL_TRUE);
-        glDisable(GL_BLEND);
-    };
+    // Center Console
+    cube({0.0f, conY, conZ}, {1.8f, 0.40f, 1.2f}, cConsoleBody);
+    // Left console desk (tilted panel)
+    cube({-2.3f, conY, conZ}, {1.5f, 0.40f, 1.2f}, cConsoleBody);
+    // Right console desk (tilted panel)
+    cube({2.3f, conY, conZ}, {1.5f, 0.40f, 1.2f}, cConsoleBody);
 
-    for (float z : {-1.5f, -4.0f, -6.5f}) {
-        candle_obj(-3.5f, z, flicker);
-        candle_obj( 3.5f, z, flicker2);
+    // Floor neon strip panels (run from the back to the front)
+    cube({-4.5f, -1.12f, -3.0f}, {0.15f, 0.01f, 12.0f}, cHoloBlue);
+    cube({ 4.5f, -1.12f, -3.0f}, {0.15f, 0.01f, 12.0f}, cHoloBlue);
+
+    // ====================================================
+    //  5. STATUS BUTTONS / KEYBOARD INDICATORS
+    // ====================================================
+    // Left desk buttons
+    cube({-2.0f, conY + 0.22f, conZ - 0.2f}, {0.12f, 0.03f, 0.12f}, cButtonRed);
+    cube({-2.4f, conY + 0.22f, conZ - 0.2f}, {0.12f, 0.03f, 0.12f}, cHoloGreen);
+    cube({-2.2f, conY + 0.22f, conZ - 0.4f}, {0.12f, 0.03f, 0.12f}, cHoloBlue);
+    // Center control panel buttons/sliders
+    for (int i = 0; i < 4; ++i) {
+        float x = -0.5f + i * 0.35f;
+        cube({x, conY + 0.22f, conZ - 0.3f}, {0.08f, 0.03f, 0.14f}, cButtonYellow);
+        cube({x, conY + 0.22f, conZ - 0.1f}, {0.08f, 0.03f, 0.08f}, (i % 2 == 0) ? cButtonRed : cHoloBlue);
+    }
+    // Right desk keyboard array
+    for (int col = 0; col < 3; ++col) {
+        for (int row = 0; row < 2; ++row) {
+            float rx = 1.9f + col * 0.22f;
+            float rz = -3.4f + row * 0.22f;
+            cube({rx, conY + 0.21f, rz}, {0.10f, 0.015f, 0.10f}, cHoloBlue * (0.4f + 0.6f * std::cos(time * 2.0f + float(col + row))));
+        }
     }
 
     // ====================================================
-    //  ALTAR / PEDESTAL at the far end for depth
+    //  6. HOLOGRAPHIC PULSING RADAR SCREEN
+    //  Flat concentric rings pulsing dynamically on console
     // ====================================================
-    cube({0.f, -0.62f, -9.0f}, {2.2f, 1.0f, 0.9f}, cStone);    // pedestal
-    cube({0.f,  0.26f, -9.0f}, {0.32f, 0.32f, 0.32f}, {0.09f,0.07f,0.11f}); // object on top
+    // Left console radar
+    glm::mat4 radML = glm::translate(glm::mat4(1.0f), {-2.4f, conY + 0.21f, conZ});
+    radML = glm::rotate(radML, glm::radians(5.0f), {1, 0, 0}); // tilt console surface angle
+    glm::mat4 mvpL = projection * view * radML;
+    drawOrbit3D(mvpL, 0.30f, cHoloGreen, 32, 1.5f);
+    drawOrbit3D(mvpL, 0.12f, cHoloGreen, 24, 1.0f);
+    float pulseL = std::fmod(time * 0.28f, 0.30f);
+    drawOrbit3D(mvpL, pulseL, cHoloGreen * 0.6f, 32, 2.0f);
+
+    // Right console secondary scanner
+    glm::mat4 radMR = glm::translate(glm::mat4(1.0f), {2.4f, conY + 0.21f, conZ - 0.2f});
+    radMR = glm::rotate(radMR, glm::radians(5.0f), {1, 0, 0});
+    glm::mat4 mvpR = projection * view * radMR;
+    drawOrbit3D(mvpR, 0.25f, cHoloBlue, 28, 1.5f);
+    float pulseR = std::fmod(time * 0.35f, 0.25f);
+    drawOrbit3D(mvpR, pulseR, cHoloBlue * 0.7f, 28, 2.0f);
 }
 
 // ------------------------------------------------------------------ rgb helper
