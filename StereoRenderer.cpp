@@ -794,9 +794,8 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     
     // Front sunset sky wall (in -Z)
     // Sky wall removed (using seamless glClearColor) 
-    // Golden sun low on horizon (pulsates slightly)
     float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
-    cube({0.0f, 0.25f, -14.6f}, {2.80f * sunPulse, 2.80f * sunPulse, 0.05f}, cSun);
+    cube({0.0f, 4.20f, -22.0f}, {4.50f * sunPulse, 4.50f * sunPulse, 0.05f}, cSun);
 
     // ====================================================
     //  2. 360-DEGREE TWINKLING STARS
