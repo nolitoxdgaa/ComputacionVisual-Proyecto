@@ -788,13 +788,11 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     const glm::vec3 cDarkInside{0.15f, 0.12f, 0.10f}; // Tent inner darkness
 
     // ====================================================
-    //  1. ENVIRONMENT (Floor, Sunset Sky backdrop)
+    //  1. ENVIRONMENT (Floor & Sun)
     // ====================================================
     cube({0.0f, -1.15f, 0.0f}, {250.f, 0.08f, 250.f}, cSand); // Floor plane
     
-    // Front sunset sky wall (in -Z)
-    cube({0.0f,  3.20f, -14.8f}, {40.f, 10.0f, 0.08f}, cSky); 
-    // Golden sun low on horizon (pulsates slightly)
+    // Golden sun high on horizon (pulsates slightly)
     float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
     cube({0.0f, 4.20f, -22.0f}, {4.50f * sunPulse, 4.50f * sunPulse, 0.05f}, cSun);
 
@@ -812,11 +810,11 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     }
 
     // ====================================================
-    //  3. THREE INTERCONNECTED OASIS WATER POOLS (Center)
+    //  3. THREE INTERCONNECTED OASIS WATER POOLS (Lifting slightly to prevent Z-fighting)
     // ====================================================
-    cube({ 0.0f, -1.11f, -2.5f}, {3.2f, 0.01f, 3.4f}, cWater);      // Central pool
-    cube({-3.2f, -1.11f, -5.2f}, {2.0f, 0.01f, 2.0f}, cWater);      // Left secondary pool
-    cube({-1.6f, -1.11f, -3.8f}, {1.4f, 0.01f, 1.4f}, cWater * 1.1f); // Connecting stream
+    cube({ 0.0f, -1.09f, -2.5f}, {3.2f, 0.01f, 3.4f}, cWater);      // Central pool
+    cube({-3.2f, -1.09f, -5.2f}, {2.0f, 0.01f, 2.0f}, cWater);      // Left secondary pool
+    cube({-1.6f, -1.09f, -3.8f}, {1.4f, 0.01f, 1.4f}, cWater * 1.1f); // Connecting stream
 
     // ====================================================
     //  4. 360-DEGREE DRIFTING CLOUDS
@@ -892,53 +890,32 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     drawCactus( 5.0f,  4.8f, 1.10f);
 
     // ====================================================
-    //  8. BACKGROUND SCATTER (360 degrees, 12.0 to 28.0 units away)
+    //  8. BACKGROUND SCATTER (360 degrees, 12.0 to 30.0 units away)
+    //  ONLY contains Acacia trees, Cacti and Clouds (no boxy pillars/blocks)
     // ====================================================
-    for (int i = 0; i < 30; ++i) {
-        // Deterministic pseudo-random position using trigonometric hashes
-        float angle = float(i) * 0.209f;
-        float dist = 12.0f + std::abs(std::sin(float(i) * 54.32f)) * 16.0f;
+    for (int i = 0; i < 35; ++i) {
+        float angle = float(i) * 0.18f;
+        float dist = 12.0f + std::abs(std::sin(float(i) * 54.32f)) * 18.0f;
         float x = dist * std::cos(angle);
         float z = dist * std::sin(angle);
 
-        // Avoid placing on top of the central oasis
+        // Avoid central oasis overlap
         if (std::abs(x) < 4.0f && std::abs(z) < 4.0f) continue;
 
         float typeHash = std::abs(std::sin(float(i) * 123.45f));
-        float sc = 0.5f + (1.0f - (dist / 28.0f)) * 0.5f; // scale down as it gets further
+        float sc = 0.45f + (1.0f - (dist / 30.0f)) * 0.55f; // scale down with distance
 
-        if (typeHash < 0.45f) {
+        if (typeHash < 0.55f) {
             // Distant Acacia tree
             drawAcacia({x, -1.11f, z}, sc);
-        } else if (typeHash < 0.80f) {
+        } else {
             // Distant Cactus
             drawCactus(x, z, sc * 1.10f);
-        } else {
-            // Distant stone pillars / obelisks
-            float hCol = 0.5f + sc * 0.90f;
-            cube({x, -1.11f + hCol*0.5f, z}, {0.18f*sc, hCol, 0.18f*sc}, cStone * 0.88f);
         }
     }
 
     // ====================================================
-    //  9. FAR HORIZON MOUNTAIN DUNES (32.0 to 45.0 units away)
-    //  Encircles the entire world in 360 degrees to block emptiness
-    // ====================================================
-    for (int i = 0; i < 12; ++i) {
-        float angle = float(i) * 0.523f; // 12 segments around the circle
-        float dist = 32.0f + std::abs(std::sin(float(i) * 12.0f)) * 8.0f;
-        float x = dist * std::cos(angle);
-        float z = dist * std::sin(angle);
-        
-        float dW = 12.0f + std::abs(std::sin(float(i) * 7.2f)) * 8.0f;
-        float dH = 2.0f + std::abs(std::cos(float(i) * 3.5f)) * 2.5f;
-        float dD = 10.0f + std::abs(std::sin(float(i) * 5.1f)) * 6.0f;
-        
-        cube({x, -1.15f + dH*0.5f, z}, {dW, dH, dD}, cDarkSand * 0.90f);
-    }
-
-    // ====================================================
-    //  10. RUINS & ANCIENT OBELISKS (Mid-ground)
+    //  9. RUINS & ANCIENT OBELISKS (Mid-ground)
     // ====================================================
     auto drawObelisk = [&](float obX, float obZ) {
         cube({obX, -0.90f, obZ}, {0.60f, 0.25f, 0.60f}, cStone);
@@ -952,13 +929,13 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     cube({ 3.5f, -1.06f,  4.0f}, {0.26f, 0.26f, 1.40f}, cStone * 0.95f); // Behind Right broken column
 
     // Weathered Rock Clusters around water pools
-    cube({ 1.30f, -1.11f, -2.3f}, {0.24f, 0.16f, 0.22f}, cStone);
-    cube({ 1.45f, -1.11f, -2.0f}, {0.18f, 0.10f, 0.18f}, cLightStone);
-    cube({-1.35f, -1.11f, -2.1f}, {0.30f, 0.14f, 0.20f}, cStone);
-    cube({-1.45f, -1.11f, -1.6f}, {0.16f, 0.08f, 0.16f}, cLightStone);
+    cube({ 1.30f, -1.08f, -2.3f}, {0.24f, 0.16f, 0.22f}, cStone);
+    cube({ 1.45f, -1.08f, -2.0f}, {0.18f, 0.10f, 0.18f}, cLightStone);
+    cube({-1.35f, -1.08f, -2.1f}, {0.30f, 0.14f, 0.20f}, cStone);
+    cube({-1.45f, -1.08f, -1.6f}, {0.16f, 0.08f, 0.16f}, cLightStone);
 
     // ====================================================
-    //  11. BEDOUIN TENT
+    //  10. BEDOUIN TENT
     // ====================================================
     const float tentX = -2.5f, tentZ = -1.2f;
     cube({tentX, -0.65f, tentZ}, {1.30f, 0.90f, 1.50f}, cTent);
@@ -967,7 +944,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     cube({tentX + 0.60f, -0.65f, tentZ + 0.72f}, {0.05f, 0.90f, 0.05f}, cWood);
 
     // ====================================================
-    //  12. CAMPFIRES & GLOWING ACCENTS
+    //  11. CAMPFIRES & GLOWING ACCENTS
     // ====================================================
     const float fireX =  1.00f;
     const float fireZ = -1.20f;
@@ -999,7 +976,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     glDisable(GL_BLEND);
 
     // ====================================================
-    //  13. FIREFLIES / PARTICLES
+    //  12. FIREFLIES / PARTICLES
     // ====================================================
     for (int i = 0; i < 6; ++i) {
         float fOffset = float(i) * 1.2f;
