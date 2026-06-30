@@ -790,16 +790,16 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     // ====================================================
     //  1. ENVIRONMENT (Floor, Sunset Sky backdrop)
     // ====================================================
-    cube({0.0f, -1.15f, 0.0f}, {250.f, 0.08f, 250.f}, cSand); // Massively expanded floor plane (360 degrees)
+    cube({0.0f, -1.15f, 0.0f}, {250.f, 0.08f, 250.f}, cSand); // Floor plane
     
     // Front sunset sky wall (in -Z)
-    // Sky wall removed (using seamless glClearColor) 
+    cube({0.0f,  3.20f, -14.8f}, {40.f, 10.0f, 0.08f}, cSky); 
+    // Golden sun low on horizon (pulsates slightly)
     float sunPulse = 1.0f + 0.03f * std::sin(time * 1.5f);
     cube({0.0f, 4.20f, -22.0f}, {4.50f * sunPulse, 4.50f * sunPulse, 0.05f}, cSun);
 
     // ====================================================
     //  2. 360-DEGREE TWINKLING STARS
-    //  Scattered in a cylinder/circle around the player
     // ====================================================
     for (int i = 0; i < 85; ++i) {
         float angle = float(i) * 0.147f;
@@ -819,7 +819,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     cube({-1.6f, -1.11f, -3.8f}, {1.4f, 0.01f, 1.4f}, cWater * 1.1f); // Connecting stream
 
     // ====================================================
-    //  4. 360-DEGREE DRIFTING CLOUDS (North, South, East, West)
+    //  4. 360-DEGREE DRIFTING CLOUDS
     // ====================================================
     auto drawDriftingCloud = [&](float baseStartX, float y, float z, float speed, float sizeScale, bool sideWays=false) {
         float offset = std::fmod(time * speed, 32.0f);
@@ -834,31 +834,27 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
             cube({z, y + 0.20f * sizeScale, val + 0.40f * sizeScale}, {0.50f * sizeScale, 0.40f * sizeScale, 1.30f * sizeScale}, cCloud * 1.10f);
         }
     };
-    // Front clouds (N)
     drawDriftingCloud(-8.0f,  3.60f, -14.0f, 0.20f, 1.20f);
     drawDriftingCloud( 5.0f,  4.20f, -14.0f, 0.12f, 0.95f);
-    // Behind clouds (S)
     drawDriftingCloud(-12.0f, 3.80f,  14.0f, -0.18f, 1.15f);
     drawDriftingCloud( 2.0f,  4.50f,  14.0f, -0.25f, 1.00f);
-    // Left & Right clouds (E & W)
     drawDriftingCloud(-14.0f, 3.90f, -14.0f, 0.16f, 1.10f, true);
     drawDriftingCloud( 14.0f, 4.30f,  14.0f, -0.22f, 1.05f, true);
 
     // ====================================================
-    //  5. 360-DEGREE GEOMETRIC SAND DUNES (Surrounding player)
+    //  5. GEOMETRIC LOW-POLY SAND DUNES (Mid-ground)
     // ====================================================
-    cube({-3.8f, -0.90f, -6.5f}, {4.0f, 0.45f, 4.5f}, cDarkSand);   // North-West
-    cube({ 3.8f, -0.85f, -7.0f}, {4.5f, 0.55f, 4.0f}, cDarkSand);   // North-East
-    cube({ 0.0f, -0.95f, -12.0f}, {10.0f, 0.58f, 3.8f}, cSand);     // Far North
-    cube({-10.0f, -0.80f, -1.0f}, {7.0f, 0.50f, 8.0f}, cDarkSand);  // Far West
-    cube({ 10.0f, -0.80f, -1.0f}, {7.0f, 0.50f, 8.0f}, cDarkSand);  // Far East
-    // Dunes Behind (z > 0)
-    cube({-4.5f, -0.85f,  6.5f}, {5.0f, 0.60f, 5.0f}, cDarkSand);   // South-West
-    cube({ 4.5f, -0.90f,  7.0f}, {5.5f, 0.50f, 5.5f}, cDarkSand);   // South-East
-    cube({ 0.0f, -0.95f,  11.5f}, {11.0f, 0.65f, 4.0f}, cSand);     // Far South
+    cube({-3.8f, -0.90f, -6.5f}, {4.0f, 0.45f, 4.5f}, cDarkSand);
+    cube({ 3.8f, -0.85f, -7.0f}, {4.5f, 0.55f, 4.0f}, cDarkSand);
+    cube({ 0.0f, -0.95f, -12.0f}, {10.0f, 0.58f, 3.8f}, cSand);
+    cube({-10.0f, -0.80f, -1.0f}, {7.0f, 0.50f, 8.0f}, cDarkSand);
+    cube({ 10.0f, -0.80f, -1.0f}, {7.0f, 0.50f, 8.0f}, cDarkSand);
+    cube({-4.5f, -0.85f,  6.5f}, {5.0f, 0.60f, 5.0f}, cDarkSand);
+    cube({ 4.5f, -0.90f,  7.0f}, {5.5f, 0.50f, 5.5f}, cDarkSand);
+    cube({ 0.0f, -0.95f,  11.5f}, {11.0f, 0.65f, 4.0f}, cSand);
 
     // ====================================================
-    //  6. 360-DEGREE STYLIZED PALM GROVES & ACACIA TREES
+    //  6. PALM GROVES & ACACIA TREES (Core layout)
     // ====================================================
     auto drawAcacia = [&](glm::vec3 basePos, float scaleVal) {
         float trunkH = 1.50f * scaleVal;
@@ -868,19 +864,17 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
         cube({basePos.x, basePos.y + trunkH + 0.28f, basePos.z}, {0.90f*scaleVal, 0.12f*scaleVal, 0.90f*scaleVal}, cGreen * 1.15f);
     };
 
-    // Front area (North)
     drawAcacia({-3.2f, -1.11f, -4.5f}, 1.10f);
     drawAcacia({ 3.0f, -1.11f, -4.2f}, 1.05f);
     drawAcacia({-5.2f, -1.11f, -7.0f}, 0.95f);
     drawAcacia({ 5.0f, -1.11f, -6.8f}, 0.90f);
-    // Behind area (South)
-    drawAcacia({-2.8f, -1.11f,  4.5f}, 1.08f); // Behind Left
-    drawAcacia({ 3.2f, -1.11f,  4.8f}, 1.02f); // Behind Right
-    drawAcacia({-4.8f, -1.11f,  6.5f}, 0.92f); // Behind Far Left
-    drawAcacia({ 4.5f, -1.11f,  7.0f}, 0.96f); // Behind Far Right
+    drawAcacia({-2.8f, -1.11f,  4.5f}, 1.08f);
+    drawAcacia({ 3.2f, -1.11f,  4.8f}, 1.02f);
+    drawAcacia({-4.8f, -1.11f,  6.5f}, 0.92f);
+    drawAcacia({ 4.5f, -1.11f,  7.0f}, 0.96f);
 
     // ====================================================
-    //  7. 360-DEGREE SAGUARO CACTI
+    //  7. SAGUARO CACTI (Core layout)
     // ====================================================
     auto drawCactus = [&](float cx, float cz, float hVal) {
         cube({cx, -1.11f + hVal*0.5f, cz}, {0.09f, hVal, 0.09f}, cCactus);
@@ -889,32 +883,73 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
         cube({cx + 0.12f, -1.11f + hVal*0.42f, cz}, {0.16f, 0.08f, 0.08f}, cCactus);
         cube({cx + 0.20f, -1.11f + hVal*0.58f, cz}, {0.08f, hVal*0.32f, 0.08f}, cCactus);
     };
-    // Front cacti
     drawCactus(-2.0f, -2.5f, 0.85f);
     drawCactus( 2.2f, -2.8f, 0.95f);
     drawCactus( 5.5f, -5.0f, 1.20f);
-    // Behind cacti
-    drawCactus(-2.5f,  2.8f, 0.90f); // Behind Left
-    drawCactus( 2.4f,  3.2f, 1.00f); // Behind Right
-    drawCactus(-5.5f,  5.2f, 1.15f); // Behind Far Left
-    drawCactus( 5.0f,  4.8f, 1.10f); // Behind Far Right
+    drawCactus(-2.5f,  2.8f, 0.90f);
+    drawCactus( 2.4f,  3.2f, 1.00f);
+    drawCactus(-5.5f,  5.2f, 1.15f);
+    drawCactus( 5.0f,  4.8f, 1.10f);
 
     // ====================================================
-    //  8. RUINS & ANCIENT OBELISKS (360 degrees)
+    //  8. BACKGROUND SCATTER (360 degrees, 12.0 to 28.0 units away)
+    // ====================================================
+    for (int i = 0; i < 30; ++i) {
+        // Deterministic pseudo-random position using trigonometric hashes
+        float angle = float(i) * 0.209f;
+        float dist = 12.0f + std::abs(std::sin(float(i) * 54.32f)) * 16.0f;
+        float x = dist * std::cos(angle);
+        float z = dist * std::sin(angle);
+
+        // Avoid placing on top of the central oasis
+        if (std::abs(x) < 4.0f && std::abs(z) < 4.0f) continue;
+
+        float typeHash = std::abs(std::sin(float(i) * 123.45f));
+        float sc = 0.5f + (1.0f - (dist / 28.0f)) * 0.5f; // scale down as it gets further
+
+        if (typeHash < 0.45f) {
+            // Distant Acacia tree
+            drawAcacia({x, -1.11f, z}, sc);
+        } else if (typeHash < 0.80f) {
+            // Distant Cactus
+            drawCactus(x, z, sc * 1.10f);
+        } else {
+            // Distant stone pillars / obelisks
+            float hCol = 0.5f + sc * 0.90f;
+            cube({x, -1.11f + hCol*0.5f, z}, {0.18f*sc, hCol, 0.18f*sc}, cStone * 0.88f);
+        }
+    }
+
+    // ====================================================
+    //  9. FAR HORIZON MOUNTAIN DUNES (32.0 to 45.0 units away)
+    //  Encircles the entire world in 360 degrees to block emptiness
+    // ====================================================
+    for (int i = 0; i < 12; ++i) {
+        float angle = float(i) * 0.523f; // 12 segments around the circle
+        float dist = 32.0f + std::abs(std::sin(float(i) * 12.0f)) * 8.0f;
+        float x = dist * std::cos(angle);
+        float z = dist * std::sin(angle);
+        
+        float dW = 12.0f + std::abs(std::sin(float(i) * 7.2f)) * 8.0f;
+        float dH = 2.0f + std::abs(std::cos(float(i) * 3.5f)) * 2.5f;
+        float dD = 10.0f + std::abs(std::sin(float(i) * 5.1f)) * 6.0f;
+        
+        cube({x, -1.15f + dH*0.5f, z}, {dW, dH, dD}, cDarkSand * 0.90f);
+    }
+
+    // ====================================================
+    //  10. RUINS & ANCIENT OBELISKS (Mid-ground)
     // ====================================================
     auto drawObelisk = [&](float obX, float obZ) {
-        cube({obX, -0.90f, obZ}, {0.60f, 0.25f, 0.60f}, cStone);       // Plinth
-        cube({obX, -0.05f, obZ}, {0.35f, 1.50f, 0.35f}, cStone * 0.9f); // Shaft
-        cube({obX,  0.75f, obZ}, {0.20f, 0.20f, 0.20f}, cLightStone);  // Cap
+        cube({obX, -0.90f, obZ}, {0.60f, 0.25f, 0.60f}, cStone);
+        cube({obX, -0.05f, obZ}, {0.35f, 1.50f, 0.35f}, cStone * 0.9f);
+        cube({obX,  0.75f, obZ}, {0.20f, 0.20f, 0.20f}, cLightStone);
     };
-    // Front Obelisk (North-East)
     drawObelisk(4.2f, -5.0f);
-    // Behind Obelisk (South-West)
     drawObelisk(-4.2f, 5.0f);
 
-    // Broken pillars
-    cube({-3.2f, -1.06f, -1.8f}, {1.40f, 0.26f, 0.26f}, cStone);       // Front Left
-    cube({ 3.5f, -1.06f,  4.0f}, {0.26f, 0.26f, 1.40f}, cStone * 0.95f); // Behind Right (laying Z-axis)
+    cube({-3.2f, -1.06f, -1.8f}, {1.40f, 0.26f, 0.26f}, cStone);       // Front Left broken column
+    cube({ 3.5f, -1.06f,  4.0f}, {0.26f, 0.26f, 1.40f}, cStone * 0.95f); // Behind Right broken column
 
     // Weathered Rock Clusters around water pools
     cube({ 1.30f, -1.11f, -2.3f}, {0.24f, 0.16f, 0.22f}, cStone);
@@ -923,7 +958,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     cube({-1.45f, -1.11f, -1.6f}, {0.16f, 0.08f, 0.16f}, cLightStone);
 
     // ====================================================
-    //  9. BEDOUIN TENT (Center-Left)
+    //  11. BEDOUIN TENT
     // ====================================================
     const float tentX = -2.5f, tentZ = -1.2f;
     cube({tentX, -0.65f, tentZ}, {1.30f, 0.90f, 1.50f}, cTent);
@@ -932,7 +967,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     cube({tentX + 0.60f, -0.65f, tentZ + 0.72f}, {0.05f, 0.90f, 0.05f}, cWood);
 
     // ====================================================
-    //  10. FRONT CAMPFIRE (Warm Amber Glow)
+    //  12. CAMPFIRES & GLOWING ACCENTS
     // ====================================================
     const float fireX =  1.00f;
     const float fireZ = -1.20f;
@@ -950,18 +985,12 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 
-    // ====================================================
-    //  11. BEHIND BEACON / CYAN FIRE (South side landmark)
-    //  Acts as a navigation guide when turned around
-    // ====================================================
+    // South side Beacon
     const float bX = -0.50f;
     const float bZ =  6.20f;
-    // Stone beacon pedestal
     cube({bX, -0.80f, bZ}, {0.40f, 0.70f, 0.40f}, cStone);
-    // Cyan flame
     float bFlameH = 0.10f + 0.05f * std::sin(fTime * 0.8f);
     cube({bX, -0.40f + bFlameH*0.5f, bZ}, {0.08f, bFlameH, 0.08f}, cFireCyan);
-    // Cyan glow (additive)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
     glDepthMask(GL_FALSE);
@@ -970,7 +999,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     glDisable(GL_BLEND);
 
     // ====================================================
-    //  12. FIREFLIES / PARTICLES (Rising over oasis pool)
+    //  13. FIREFLIES / PARTICLES
     // ====================================================
     for (int i = 0; i < 6; ++i) {
         float fOffset = float(i) * 1.2f;
