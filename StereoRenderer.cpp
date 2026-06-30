@@ -744,7 +744,7 @@ void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& 
     // ====================================================
     //  1. ENVIRONMENT & SKY (Floor, Sunset Sky, Sun)
     // ====================================================
-    cube({0.0f, -1.15f, -3.0f}, {40.f, 0.08f, 40.f}, cSand); // Expanded Floor plane
+    cube({0.0f, -1.15f, -3.0f}, {250.f, 0.08f, 250.f}, cSand); // Massively expanded floor to cover the entire horizon
     cube({0.0f,  3.20f, -14.8f}, {40.f, 10.0f, 0.08f}, cSky); // Wide back skybox wall
     
     // Golden sun low on horizon (pulsates slightly)

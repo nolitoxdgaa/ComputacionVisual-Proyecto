@@ -130,8 +130,14 @@ int main() {
             tracker.grabFrame();
         }
 
-        // Limpiar pantalla
-        glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
+        // Limpiar pantalla según el modo activo para evitar bordes negros en el horizonte
+        if (continuum.getState() == ContinuumState::VIRTUAL_REALITY) {
+            glClearColor(0.92f, 0.48f, 0.28f, 1.0f); // Naranja atardecer (combina con el cielo del oasis)
+        } else if (continuum.getState() == ContinuumState::AUGMENTED_VIRTUALITY) {
+            glClearColor(0.01f, 0.01f, 0.03f, 1.0f); // Negro espacial para el lab cyberpunk
+        } else {
+            glClearColor(0.05f, 0.05f, 0.1f, 1.0f);  // Fondo azul oscuro default
+        }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
