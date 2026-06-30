@@ -62,6 +62,7 @@ bool MarkerTracker::trackMarker(int targetId, cv::Mat& rvec, cv::Mat& tvec) {
             };
 
             // Estimate pose using PnP
+            lastDetectedCorners = corners[i];
             cv::solvePnP(objectPoints, corners[i], cameraMatrix, distCoeffs, rvec, tvec);
             return true;
         }

@@ -160,7 +160,8 @@ int main() {
 
             // --------------------------------------------------
             // MODO 2: REALIDAD AUMENTADA
-            // Feed de camara + cubo 3D sobre marcador ArUco.
+            // Feed de camara + holograma animado + laser scanner
+            // + reticulas en las esquinas del marcador ArUco.
             // --------------------------------------------------
             case ContinuumState::AUGMENTED_REALITY:
                 if (cameraOk) {
@@ -168,15 +169,11 @@ int main() {
                     renderer.updateVideoTexture(frame);
                     renderer.renderBackground();
 
-                    // Intentar detectar marcador con ID 0
+                    // Detectar marcador ArUco con ID 0
                     markerDetected = tracker.trackMarker(0, rvec, tvec);
 
                     if (markerDetected) {
-                        // Convertir pose de OpenCV a OpenGL
-                        glm::mat4 arModel = MathUtils::openCVPoseToGLM(rvec, tvec);
-                        arModel = glm::scale(arModel, glm::vec3(0.08f));
-
-                        // Construir matriz de proyeccion a partir de la camara calibrada
+                        // ---- Construir projection desde la camara calibrada ----
                         cv::Mat K = tracker.getCameraMatrix();
                         float fx = (float)K.at<double>(0, 0);
                         float fy = (float)K.at<double>(1, 1);
@@ -193,7 +190,21 @@ int main() {
                         arProj[2][3] = -1.0f;
                         arProj[3][2] = -2.0f * far_plane * near_plane / (far_plane - near_plane);
 
-                        renderer.renderCube(arModel, glm::mat4(1.0f), arProj, glm::vec3(0.2f, 0.7f, 1.0f));
+                        // Pose de OpenCV -> OpenGL
+                        glm::mat4 arModel = MathUtils::openCVPoseToGLM(rvec, tvec);
+
+                        float now = (float)glfwGetTime();
+
+                        // 1. Holograma animado (cubo cyan con efecto seno + scanlines)
+                        renderer.renderHologram(arModel, arProj, now);
+
+                        // 2. Laser de escaneo que barre el marcador de arriba a abajo
+                        renderer.renderScanLaser(tracker.getLastCorners(),
+                                                 frame.cols, frame.rows, now);
+
+                        // 3. Retículas de esquinas – visualiza el resultado de solvePnP
+                        renderer.renderCornerReticles(tracker.getLastCorners(),
+                                                      frame.cols, frame.rows);
                     }
                 }
                 break;
