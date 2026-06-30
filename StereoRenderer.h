@@ -28,29 +28,26 @@ public:
     void renderCube(const glm::mat4& model, const glm::mat4& view, const glm::mat4& projection, const glm::vec3& color);
 
     // ---------------------------------------------------------------
-    // AR Mode 2 – enhanced hologram rendering
+    // AR Mode 2 – hologram + scan laser + PnP corner reticles
     // ---------------------------------------------------------------
-
-    // Renders the animated hologram pyramid/robot over the ArUco marker.
-    // arModel   : OpenCV-to-OpenGL pose matrix (from MathUtils::openCVPoseToGLM)
-    // arProj    : Projection built from the calibrated camera intrinsics
-    // time      : glfwGetTime() – drives the sine-wave deformation and scanlines
     void renderHologram(const glm::mat4& arModel, const glm::mat4& arProj, float time);
 
-    // Draws a horizontal laser scan line that sweeps up and down over the marker.
-    // corners2D : the 4 pixel-space corners returned by MarkerTracker::getLastCorners()
-    // frameW/H  : camera frame dimensions (640 x 480 by default)
-    // time      : glfwGetTime()
     void renderScanLaser(const std::vector<cv::Point2f>& corners2D,
                          int frameW, int frameH, float time);
 
-    // Draws small crosshair reticles at the 4 detected ArUco corners (PnP viz).
     void renderCornerReticles(const std::vector<cv::Point2f>& corners2D,
                               int frameW, int frameH);
 
     // ---------------------------------------------------------------
+    // AV Mode 3 – RGB Gamer Setup scene
+    // time: glfwGetTime(), used to drive the RGB color cycling and animations.
+    // The monitor screen uses the video texture already uploaded via updateVideoTexture().
+    // ---------------------------------------------------------------
+    void renderGamerSetup(const glm::mat4& view, const glm::mat4& projection, float time);
 
-    // Renders the virtual environment (a simple grid/room).
+    // ---------------------------------------------------------------
+    // VR Mode 4 – basic virtual scene (used inside stereo callback too)
+    // ---------------------------------------------------------------
     void renderVirtualScene(const glm::mat4& view, const glm::mat4& projection);
 
     // Renders the scene in stereoscopic split-screen (side-by-side).
@@ -59,34 +56,46 @@ public:
                       const std::function<void(const glm::mat4&, const glm::mat4&)>& renderSceneCallback);
 
 private:
-    // Helper functions to compile and link shader programs
+    // ---- shader compile helpers ----
     GLuint compileShader(GLenum type, const std::string& source);
     GLuint linkProgram(GLuint vertexShader, GLuint fragmentShader);
 
-    // Helper: build NDC lines VBO and draw them
+    // ---- 2-D overlay helper (scan laser + reticles) ----
     void drawLines2D(const std::vector<float>& verts, const glm::vec4& color, float lineWidth = 2.0f);
 
-    // Shader programs
-    GLuint quadProgram;
-    GLuint objectProgram;
-    GLuint holoProgram;    // hologram animated shader
-    GLuint overlayProgram; // 2-D flat screen-space lines
+    // ---- RGB cube helper (gamer scene) ----
+    void renderRGB(const glm::mat4& model, const glm::mat4& view,
+                   const glm::mat4& projection, float time, float hueOffset);
 
-    // Buffers and VAOs
-    GLuint quadVAO, quadVBO;
-    GLuint cubeVAO, cubeVBO;
-    GLuint overlayVAO, overlayVBO; // dynamic 2D lines
+    // ---- shader programs ----
+    GLuint quadProgram;      // background quad  (video texture, flat)
+    GLuint objectProgram;    // solid-color 3D objects
+    GLuint holoProgram;      // hologram (Mode 2)
+    GLuint overlayProgram;   // 2-D screen-space lines
+    GLuint rgbProgram;       // HSV-cycling RGB objects (Mode 3)
 
-    // Video texture ID
+    // ---- VAO / VBO ----
+    GLuint quadVAO,    quadVBO;
+    GLuint cubeVAO,    cubeVBO;
+    GLuint overlayVAO, overlayVBO;
+
+    // ---- textures ----
     GLuint videoTextureId;
 
-    // Shader uniform locations
+    // ---- uniform locations ----
     GLint quadTexLocation;
     GLint quadMVPLocation;
+
     GLint objMVPLocation;
     GLint objColorLocation;
+
     GLint holoMVPLocation;
     GLint holoTimeLocation;
     GLint holoColorLocation;
+
     GLint overlayColorLocation;
+
+    GLint rgbMVPLocation;
+    GLint rgbTimeLocation;
+    GLint rgbHueOffsetLocation;
 };

@@ -211,23 +211,14 @@ int main() {
 
             // --------------------------------------------------
             // MODO 3: VIRTUALIDAD AUMENTADA
-            // Entorno 3D virtual con feed de camara proyectado
-            // en una pantalla dentro del mundo virtual.
+            // Entorno 3D virtual de setup gamer RGB con el feed
+            // de la camara proyectado en el monitor virtual.
             // --------------------------------------------------
             case ContinuumState::AUGMENTED_VIRTUALITY:
-                renderer.renderVirtualScene(virtualView, projection);
-
-                // Renderizar una "pantalla de TV" virtual con el feed de la camara
                 if (cameraOk) {
                     renderer.updateVideoTexture(tracker.getFrame());
-
-                    // Posicionar la pantalla TV frente al usuario en el mundo virtual
-                    glm::mat4 tvModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, -3.0f));
-                    tvModel = glm::scale(tvModel, glm::vec3(3.0f, 2.0f, 0.05f));
-
-                    // Renderizar la pantalla de TV con la textura del video en vivo en el mundo virtual 3D
-                    renderer.renderTexturedQuad(tvModel, virtualView, projection);
                 }
+                renderer.renderGamerSetup(virtualView, projection, (float)glfwGetTime());
                 break;
 
             // --------------------------------------------------
