@@ -36,17 +36,37 @@ const std::string objectVertexShaderSrc = R"(
     #version 330 core
     layout (location = 0) in vec3 aPos;
     uniform mat4 uMVP;
+    uniform mat4 uModel; // Model matrix for world space coordinates
+    out vec3 vWorldPos;
     void main() {
+        vWorldPos = (uModel * vec4(aPos, 1.0)).xyz;
         gl_Position = uMVP * vec4(aPos, 1.0);
     }
 )";
 
 const std::string objectFragmentShaderSrc = R"(
     #version 330 core
+    in vec3 vWorldPos;
     out vec4 FragColor;
     uniform vec3 uColor;
     void main() {
-        FragColor = vec4(uColor, 1.0);
+        // Calculate dynamic face normal using screen derivatives (perfect low-poly style shading)
+        vec3 normal = vec3(0.0, 1.0, 0.0);
+        vec3 dx = dFdx(vWorldPos);
+        vec3 dy = dFdy(vWorldPos);
+        if (length(dx) > 0.0001 && length(dy) > 0.0001) {
+            normal = normalize(cross(dx, dy));
+        }
+
+        // Sunset directional light matching the desert sun orientation
+        vec3 lightDir = normalize(vec3(0.1, 0.35, -1.0));
+        float diff = max(dot(normal, lightDir), 0.0);
+
+        // Ambient lighting
+        float ambient = 0.32;
+
+        vec3 finalColor = uColor * (ambient + diff * 0.68);
+        FragColor = vec4(finalColor, 1.0);
     }
 )";
 
@@ -146,7 +166,7 @@ StereoRenderer::StereoRenderer()
       overlayVAO(0), overlayVBO(0), ring3dVAO(0), ring3dVBO(0),
       videoTextureId(0),
       quadTexLocation(-1), quadMVPLocation(-1),
-      objMVPLocation(-1), objColorLocation(-1),
+      objMVPLocation(-1), objColorLocation(-1), objModelLocation(-1),
       holoMVPLocation(-1), holoTimeLocation(-1), holoColorLocation(-1),
       overlayColorLocation(-1),
       rgbMVPLocation(-1), rgbTimeLocation(-1), rgbHueOffsetLocation(-1) {}
@@ -213,6 +233,7 @@ bool StereoRenderer::initialize() {
     quadMVPLocation    = glGetUniformLocation(quadProgram,    "uMVP");
     objMVPLocation     = glGetUniformLocation(objectProgram,  "uMVP");
     objColorLocation   = glGetUniformLocation(objectProgram,  "uColor");
+    objModelLocation   = glGetUniformLocation(objectProgram,  "uModel");
     holoMVPLocation    = glGetUniformLocation(holoProgram,    "uMVP");
     holoTimeLocation   = glGetUniformLocation(holoProgram,    "uTime");
     holoColorLocation  = glGetUniformLocation(holoProgram,    "uColor");
@@ -351,6 +372,7 @@ void StereoRenderer::renderCube(const glm::mat4& model, const glm::mat4& view, c
 
     glm::mat4 mvp = projection * view * model;
     glUniformMatrix4fv(objMVPLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniformMatrix4fv(objModelLocation, 1, GL_FALSE, glm::value_ptr(model));
     glUniform3fv(objColorLocation, 1, glm::value_ptr(color));
 
     glDrawArrays(GL_TRIANGLES, 0, 36);

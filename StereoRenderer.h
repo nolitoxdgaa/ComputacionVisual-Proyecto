@@ -98,6 +98,7 @@ private:
 
     GLint objMVPLocation;
     GLint objColorLocation;
+    GLint objModelLocation;
 
     GLint holoMVPLocation;
     GLint holoTimeLocation;
