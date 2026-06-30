@@ -724,9 +724,17 @@ void StereoRenderer::renderCyberpunkLab(const glm::mat4& view,
     glm::mat4 sm = glm::translate(glm::mat4(1.0f), {tblX, scrY, scrZ});
     sm = glm::rotate(sm, glm::radians(-22.0f), {1.0f, 0.0f, 0.0f});
 
-    // Hologram bezel frame (cyan glass border)
-    glm::mat4 frameM = glm::scale(sm, {sW + 0.12f, sH + 0.12f, 0.04f});
-    renderCube(frameM, view, projection, cHoloBlue * 0.45f);
+    // Hologram bezel frame (4 border bars to make it hollow, preventing screen coverage)
+    float bThick = 0.05f; // border bar thickness
+    float bDepth = 0.04f; // border bar depth
+    // Top bar
+    renderCube(glm::scale(glm::translate(sm, {0.0f, sH*0.5f + bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue * 0.7f);
+    // Bottom bar
+    renderCube(glm::scale(glm::translate(sm, {0.0f, -sH*0.5f - bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue * 0.7f);
+    // Left bar
+    renderCube(glm::scale(glm::translate(sm, {-sW*0.5f - bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue * 0.7f);
+    // Right bar
+    renderCube(glm::scale(glm::translate(sm, {sW*0.5f + bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue * 0.7f);
 
     // Additive projection cone from the table core to the screen
     glEnable(GL_BLEND);
@@ -737,9 +745,10 @@ void StereoRenderer::renderCyberpunkLab(const glm::mat4& view,
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 
-    // Live webcam feed screen projected inside the frame (rotated)
+    // Live webcam feed screen projected inside the frame (rotated & slightly shifted forward to avoid Z-fighting)
     {
-        glm::mat4 screenM = glm::scale(sm, {sW, sH, 0.01f});
+        glm::mat4 screenM = glm::translate(sm, {0.0f, 0.0f, 0.015f});
+        screenM = glm::scale(screenM, {sW, sH, 0.01f});
         renderTexturedQuad(screenM, view, projection);
     }
 }
