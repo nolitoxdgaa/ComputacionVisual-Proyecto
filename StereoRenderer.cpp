@@ -628,6 +628,7 @@ void StereoRenderer::renderSolarSystem(const glm::mat4& arModel,
 }
 
 // ------------------------------------------------------------------ renderCyberpunkLab
+// ------------------------------------------------------------------ renderCyberpunkLab
 void StereoRenderer::renderCyberpunkLab(const glm::mat4& view,
                                         const glm::mat4& projection, float time) {
     // Compact helper lambda for solid cubes
@@ -647,109 +648,149 @@ void StereoRenderer::renderCyberpunkLab(const glm::mat4& view,
     const glm::vec3 cLedRed      {1.00f, 0.15f, 0.20f};
 
     // ====================================================
-    //  1. ENVIRONMENT (Floor, Bulkheads, Neon Grid)
+    //  1. ENVIRONMENT (Floor, Ceiling, Walls)
     // ====================================================
-    cube({0.0f, -1.15f, -3.0f}, {16.f, 0.08f, 16.f}, cFloor); // floor
-    cube({0.0f,  3.50f, -3.0f}, {16.f, 0.08f, 16.f}, cWall);  // ceiling
-    cube({-7.5f, 1.20f, -3.0f}, {0.08f, 5.0f, 16.f},  cWall);  // left wall
-    cube({ 7.5f, 1.20f, -3.0f}, {0.08f, 5.0f, 16.f},  cWall);  // right wall
-    cube({0.0f,  1.20f, -8.0f}, {16.f,  5.0f, 0.08f}, cWall);  // back wall
+    cube({0.0f, -1.15f, -3.0f}, {20.f, 0.08f, 20.f}, cFloor); // floor
+    cube({0.0f,  3.80f, -3.0f}, {20.f, 0.08f, 20.f}, cWall);  // ceiling
+    cube({-9.5f, 1.30f, -3.0f}, {0.08f, 5.0f, 20.f},  cWall);  // left wall
+    cube({ 9.5f, 1.30f, -3.0f}, {0.08f, 5.0f, 20.f},  cWall);  // right wall
+    cube({0.0f,  1.30f, -9.5f}, {20.f,  5.0f, 0.08f}, cWall);  // back wall
 
-    // Floating structural beams on walls
-    cube({-7.4f, 1.20f, -3.0f}, {0.04f, 0.15f, 16.0f}, cHoloBlue * 0.4f);
-    cube({ 7.4f, 1.20f, -3.0f}, {0.04f, 0.15f, 16.0f}, cHoloBlue * 0.4f);
-
-    // Floor grids (neon cian strips)
-    cube({-3.0f, -1.12f, -3.0f}, {0.08f, 0.01f, 10.0f}, cHoloBlue * 0.7f);
-    cube({ 3.0f, -1.12f, -3.0f}, {0.08f, 0.01f, 10.0f}, cHoloBlue * 0.7f);
-    cube({ 0.0f, -1.12f, -5.0f}, {6.00f, 0.01f, 0.08f}, cHoloPurple * 0.7f);
+    // Floor grid neon lines
+    cube({-4.0f, -1.12f, -3.0f}, {0.06f, 0.01f, 14.0f}, cHoloBlue * 0.5f);
+    cube({ 4.0f, -1.12f, -3.0f}, {0.06f, 0.01f, 14.0f}, cHoloBlue * 0.5f);
 
     // ====================================================
-    //  2. SERVER RACKS (With blinky lights flanking back wall)
+    //  2. CASCADES OF FALLING MATRIX CODE (Background)
     // ====================================================
-    for (int i = 0; i < 4; ++i) {
-        float x = (i < 2) ? -4.5f - i*1.2f : 3.3f + (i-2)*1.2f;
-        float z = -6.5f;
-        // Server cabinet body
-        cube({x, 0.60f, z}, {0.80f, 3.40f, 0.80f}, cServerRack);
-
-        // Blinking indicator LEDs (stacked vertically)
-        for (int r = 0; r < 6; ++r) {
-            float blink = 0.5f + 0.5f * std::sin(time * (5.0f + r) + x);
-            glm::vec3 ledCol = (r % 3 == 0) ? cLedRed : ((r % 3 == 1) ? cLedGreen : cHoloBlue);
-            cube({x - 0.32f, -0.60f + r*0.48f, z + 0.41f}, {0.06f, 0.06f, 0.03f}, ledCol * (blink > 0.4f ? 1.0f : 0.15f));
-            cube({x + 0.32f, -0.60f + r*0.48f, z + 0.41f}, {0.06f, 0.06f, 0.03f}, ledCol * (blink > 0.6f ? 0.15f : 1.0f));
+    for (int c = 0; c < 8; ++c) {
+        float x = -7.5f + c * 2.14f;
+        if (std::abs(x) < 1.8f) continue; // don't block the screen center
+        float speed = 2.0f + std::sin(float(c) * 4.3f) * 0.8f;
+        float fall = std::fmod(time * speed, 8.0f);
+        for (int r = 0; r < 7; ++r) {
+            float y = 3.6f - fall + r * 0.45f;
+            if (y < -1.1f || y > 3.6f) continue;
+            float brightness = 1.0f - (r * 0.14f);
+            cube({x, y, -8.8f}, {0.06f, 0.14f, 0.04f}, glm::vec3(0.0f, 1.0f, 0.40f) * brightness);
         }
     }
 
     // ====================================================
-    //  3. HOLOGRAPHIC INCLINED PROJECTION TABLE
+    //  3. SERVER RACKS (With blinking LEDs)
     // ====================================================
-    const float tblX =  0.0f;
-    const float tblY = -0.70f;
-    const float tblZ = -3.5f;
+    for (int i = 0; i < 4; ++i) {
+        float x = (i < 2) ? -6.8f - i*1.2f : 5.6f + (i-2)*1.2f;
+        float z = -7.5f;
+        cube({x, 0.60f, z}, {0.90f, 3.40f, 0.90f}, cServerRack);
 
-    // Pedestal column
-    cube({tblX, tblY, tblZ}, {0.55f, 0.85f, 0.55f}, cConsole);
-    // Table surface plate (cyber hexagon shape simulated by overlapping boxes)
-    cube({tblX, tblY + 0.42f, tblZ}, {1.60f, 0.08f, 1.20f}, cConsole * 0.8f);
-    cube({tblX, tblY + 0.42f, tblZ}, {1.20f, 0.08f, 1.60f}, cConsole * 0.8f);
-
-    // Glowing core in the center of the table (source of the hologram)
-    cube({tblX, tblY + 0.47f, tblZ}, {0.28f, 0.04f, 0.28f}, cHoloBlue);
-
-    // Concentric neon rings flat on the table
-    glm::mat4 tblM = glm::translate(glm::mat4(1.0f), {tblX, tblY + 0.48f, tblZ});
-    glm::mat4 mvpT = projection * view * tblM;
-    drawOrbit3D(mvpT, 0.68f, cHoloBlue, 32, 2.0f);
-    drawOrbit3D(mvpT, 0.48f, cHoloPurple, 24, 1.5f);
-
-    // Dynamic scanning ring pulsing outwards from core
-    float pulseT = std::fmod(time * 0.42f, 0.68f);
-    drawOrbit3D(mvpT, pulseT, cHoloBlue * 0.7f, 32, 1.5f);
+        // Indicator LEDs
+        for (int r = 0; r < 6; ++r) {
+            float blink = 0.5f + 0.5f * std::sin(time * (4.5f + r) + x);
+            glm::vec3 ledCol = (r % 3 == 0) ? cLedRed : ((r % 3 == 1) ? cLedGreen : cHoloBlue);
+            cube({x - 0.38f, -0.60f + r*0.48f, z + 0.46f}, {0.06f, 0.06f, 0.03f}, ledCol * (blink > 0.45f ? 1.0f : 0.15f));
+            cube({x + 0.38f, -0.60f + r*0.48f, z + 0.46f}, {0.06f, 0.06f, 0.03f}, ledCol * (blink > 0.65f ? 0.15f : 1.0f));
+        }
+    }
 
     // ====================================================
-    //  4. TILTED FLOATING CAMERA SCREEN (HOLOGRAM FEED)
-    //  Rotated backward around X-axis for floating look
+    //  4. GLOWING SCI-FI COMMAND CONSOLE DESK
+    // ====================================================
+    const float dX = 0.0f, dY = -0.70f, dZ = -2.40f;
+    // Desk Surface
+    cube({dX, dY, dZ}, {6.5f, 0.08f, 1.4f}, cConsole);
+    // Support pillars
+    cube({dX - 2.5f, -0.92f, dZ}, {0.4f, 0.4f, 1.0f}, cConsole * 0.7f);
+    cube({dX + 2.5f, -0.92f, dZ}, {0.4f, 0.4f, 1.0f}, cConsole * 0.7f);
+
+    // Glowing Neon Command Panels on Desk
+    // Left console keyboard
+    cube({dX - 1.6f, dY + 0.05f, dZ + 0.1f}, {1.2f, 0.02f, 0.5f}, cConsole * 0.5f);
+    for (int k = 0; k < 6; ++k) {
+        cube({dX - 2.0f + k*0.16f, dY + 0.06f, dZ + 0.2f}, {0.08f, 0.02f, 0.08f}, cHoloBlue * (std::sin(time * 3.0f + k) > 0.0f ? 1.0f : 0.2f));
+        cube({dX - 2.0f + k*0.16f, dY + 0.06f, dZ + 0.0f}, {0.08f, 0.02f, 0.08f}, cHoloPurple * (std::cos(time * 2.0f + k) > 0.0f ? 1.0f : 0.2f));
+    }
+    // Right console keyboard
+    cube({dX + 1.6f, dY + 0.05f, dZ + 0.1f}, {1.2f, 0.02f, 0.5f}, cConsole * 0.5f);
+    for (int k = 0; k < 6; ++k) {
+        cube({dX + 1.2f + k*0.16f, dY + 0.06f, dZ + 0.2f}, {0.08f, 0.02f, 0.08f}, cHoloPurple * (std::sin(time * 2.5f - k) > 0.0f ? 1.0f : 0.2f));
+        cube({dX + 1.2f + k*0.16f, dY + 0.06f, dZ + 0.0f}, {0.08f, 0.02f, 0.08f}, cHoloBlue * (std::cos(time * 3.5f - k) > 0.0f ? 1.0f : 0.2f));
+    }
+
+    // ====================================================
+    //  5. TRIPLE MONITOR CURVED COMMAND SETUP
     // ====================================================
     const float scrY = 0.55f;
     const float scrZ = -3.40f;
     const float sW = 2.45f, sH = 1.50f;
+    const float bThick = 0.05f; // border bar thickness
+    const float bDepth = 0.04f;
 
-    // Glowing coordinate axes floating around screen
-    cube({tblX - sW*0.62f, scrY, scrZ}, {0.02f, sH * 0.8f, 0.02f}, cHoloBlue * 0.6f);
-    cube({tblX + sW*0.62f, scrY, scrZ}, {0.02f, sH * 0.8f, 0.02f}, cHoloPurple * 0.6f);
+    // --- A. CENTRAL MONITOR (WEB CAM FEED) ---
+    glm::mat4 sm = glm::translate(glm::mat4(1.0f), {0.0f, scrY, scrZ});
+    sm = glm::rotate(sm, glm::radians(-12.0f), {1.0f, 0.0f, 0.0f}); // slight tilt
 
-    // Tilted Model matrix: translation -> rotateX(-22 deg) -> scale
-    glm::mat4 sm = glm::translate(glm::mat4(1.0f), {tblX, scrY, scrZ});
-    sm = glm::rotate(sm, glm::radians(-22.0f), {1.0f, 0.0f, 0.0f});
+    // Hollow border
+    renderCube(glm::scale(glm::translate(sm, {0.0f, sH*0.5f + bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue);
+    renderCube(glm::scale(glm::translate(sm, {0.0f, -sH*0.5f - bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue);
+    renderCube(glm::scale(glm::translate(sm, {-sW*0.5f - bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue);
+    renderCube(glm::scale(glm::translate(sm, {sW*0.5f + bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue);
 
-    // Hologram bezel frame (4 border bars to make it hollow, preventing screen coverage)
-    float bThick = 0.05f; // border bar thickness
-    float bDepth = 0.04f; // border bar depth
-    // Top bar
-    renderCube(glm::scale(glm::translate(sm, {0.0f, sH*0.5f + bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue * 0.7f);
-    // Bottom bar
-    renderCube(glm::scale(glm::translate(sm, {0.0f, -sH*0.5f - bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue * 0.7f);
-    // Left bar
-    renderCube(glm::scale(glm::translate(sm, {-sW*0.5f - bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue * 0.7f);
-    // Right bar
-    renderCube(glm::scale(glm::translate(sm, {sW*0.5f + bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue * 0.7f);
-
-    // Additive projection cone from the table core to the screen
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-    glDepthMask(GL_FALSE);
-    // Projection volume
-    cube({tblX, tblY + 0.65f, tblZ + 0.05f}, {0.20f + (time*0.01f), 0.50f, 0.20f}, cHoloBlue * 0.08f);
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-
-    // Live webcam feed screen projected inside the frame (rotated & slightly shifted forward to avoid Z-fighting)
+    // Live webcam feed screen (scaled matching 2.0x quad primitive size: scale factor sW*0.5, sH*0.5)
     {
-        glm::mat4 screenM = glm::translate(sm, {0.0f, 0.0f, 0.015f});
-        screenM = glm::scale(screenM, {sW, sH, 0.01f});
+        glm::mat4 screenM = glm::translate(sm, {0.0f, 0.0f, 0.015f}); // shifted slightly forward
+        screenM = glm::scale(screenM, {sW * 0.5f, sH * 0.5f, 1.0f});
         renderTexturedQuad(screenM, view, projection);
+    }
+
+    // --- B. LEFT MONITOR (DIAGNOSTIC SYSTEM MATRIX) ---
+    // Positioned left, angled inwards by 28 degrees
+    glm::mat4 smLeft = glm::translate(glm::mat4(1.0f), {-sW - 0.25f, scrY, scrZ + 0.30f});
+    smLeft = glm::rotate(smLeft, glm::radians(28.0f), {0.0f, 1.0f, 0.0f});
+    smLeft = glm::rotate(smLeft, glm::radians(-12.0f), {1.0f, 0.0f, 0.0f});
+
+    // Hollow border
+    renderCube(glm::scale(glm::translate(smLeft, {0.0f, sH*0.5f + bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloPurple);
+    renderCube(glm::scale(glm::translate(smLeft, {0.0f, -sH*0.5f - bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloPurple);
+    renderCube(glm::scale(glm::translate(smLeft, {-sW*0.5f - bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloPurple);
+    renderCube(glm::scale(glm::translate(smLeft, {sW*0.5f + bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloPurple);
+
+    // Screen backplate
+    renderCube(glm::scale(glm::translate(smLeft, {0.0f, 0.0f, -0.01f}), {sW, sH, 0.01f}), view, projection, cWall * 1.5f);
+
+    // Diagnostic grid inside screen (animating concentric lines)
+    glm::mat4 lM = glm::translate(smLeft, {0.0f, 0.0f, 0.02f});
+    glm::mat4 mvpL = projection * view * lM;
+    drawOrbit3D(mvpL, 0.50f, cHoloPurple * 0.8f, 24, 1.5f);
+    drawOrbit3D(mvpL, 0.30f, cHoloBlue * 0.8f, 16, 1.5f);
+    drawOrbit3D(mvpL, std::fmod(time * 0.3f, 0.55f), cHoloBlue, 24, 1.0f);
+
+    // --- C. RIGHT MONITOR (DYNAMIC EQUALIZER VISUALIZER) ---
+    // Positioned right, angled inwards by -28 degrees
+    glm::mat4 smRight = glm::translate(glm::mat4(1.0f), {sW + 0.25f, scrY, scrZ + 0.30f});
+    smRight = glm::rotate(smRight, glm::radians(-28.0f), {0.0f, 1.0f, 0.0f});
+    smRight = glm::rotate(smRight, glm::radians(-12.0f), {1.0f, 0.0f, 0.0f});
+
+    // Hollow border
+    renderCube(glm::scale(glm::translate(smRight, {0.0f, sH*0.5f + bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue);
+    renderCube(glm::scale(glm::translate(smRight, {0.0f, -sH*0.5f - bThick*0.5f, 0.0f}), {sW + bThick*2.0f, bThick, bDepth}), view, projection, cHoloBlue);
+    renderCube(glm::scale(glm::translate(smRight, {-sW*0.5f - bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue);
+    renderCube(glm::scale(glm::translate(smRight, {sW*0.5f + bThick*0.5f, 0.0f, 0.0f}), {bThick, sH, bDepth}), view, projection, cHoloBlue);
+
+    // Screen backplate
+    renderCube(glm::scale(glm::translate(smRight, {0.0f, 0.0f, -0.01f}), {sW, sH, 0.01f}), view, projection, cWall * 1.5f);
+
+    // Dynamic equalizer bars (visualizers) pulsing up and down
+    for (int b = 0; b < 6; ++b) {
+        float barH = 0.2f + 0.5f * std::sin(time * 6.0f + b * 1.5f) + 0.4f * std::cos(time * 3.0f - b);
+        barH = glm::clamp(barH, 0.1f, sH * 0.85f);
+        
+        float bx = -sW * 0.4f + b * (sW * 0.16f);
+        float by = -sH * 0.45f + barH * 0.5f;
+
+        glm::mat4 barM = glm::translate(smRight, {bx, by, 0.02f});
+        barM = glm::scale(barM, {0.20f, barH, 0.01f});
+        renderCube(barM, view, projection, (b % 2 == 0) ? cHoloPurple : cHoloBlue * 1.2f);
     }
 }
 
