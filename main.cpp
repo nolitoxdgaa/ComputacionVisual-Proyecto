@@ -139,7 +139,8 @@ int main() {
         glm::quat quatYaw   = glm::angleAxis(glm::radians(cameraYaw),   glm::vec3(0, 1, 0));
         glm::quat quatPitch = glm::angleAxis(glm::radians(cameraPitch), glm::vec3(1, 0, 0));
         glm::mat4 cameraRotation = glm::mat4_cast(glm::normalize(quatYaw * quatPitch));
-        glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 3.0f));
+        // Camara ligeramente elevada (y=1.2) para ver el setup como si estuvieras sentado frente al escritorio
+        glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.2f, 2.0f));
         glm::mat4 virtualView = glm::inverse(cameraRotation * cameraTranslation);
 
         // ==========================================

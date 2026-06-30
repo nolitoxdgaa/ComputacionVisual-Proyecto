@@ -503,122 +503,126 @@ void StereoRenderer::renderGamerSetup(const glm::mat4& view,
         renderRGB(m, view, projection, time, hue);
     };
 
-    // ---- dark color palette ----
-    const glm::vec3 cFloor  {0.02f, 0.01f, 0.04f};
-    const glm::vec3 cWall   {0.03f, 0.01f, 0.05f};
-    const glm::vec3 cCeil   {0.02f, 0.01f, 0.03f};
-    const glm::vec3 cDesk   {0.07f, 0.05f, 0.09f};  // dark purple-carbon desk
-    const glm::vec3 cDevice {0.04f, 0.04f, 0.07f};  // near-black peripheral body
-    const glm::vec3 cMon    {0.03f, 0.03f, 0.03f};  // monitor frame
+    // ---- color palette ----
+    // Walls get a tiny purple tint so they are subtly visible (not pure black)
+    const glm::vec3 cFloor  {0.04f, 0.02f, 0.07f};
+    const glm::vec3 cWall   {0.05f, 0.02f, 0.09f};
+    const glm::vec3 cDesk   {0.10f, 0.07f, 0.14f};  // dark carbon-purple
+    const glm::vec3 cDevice {0.06f, 0.06f, 0.10f};  // near-black peripheral body
+    const glm::vec3 cMon    {0.05f, 0.05f, 0.05f};  // monitor frame charcoal
 
     // =============================================
-    //  ROOM
+    //  ROOM  —  camera sits at y=1.2, z=+2
+    //  All scene items face camera looking at -Z
     // =============================================
-    cube({0.0f, -1.12f,  0.0f}, {16.f, 0.08f, 16.f}, cFloor);         // Floor
-    cube({0.0f,  0.5f,  -6.0f}, {16.f,  8.f,  0.10f}, cWall);         // Back wall
-    cube({-8.0f, 0.5f,   0.0f}, {0.10f, 8.f, 16.f},  cWall);          // Left wall
-    cube({ 8.0f, 0.5f,   0.0f}, {0.10f, 8.f, 16.f},  cWall);          // Right wall
-    cube({0.0f,  3.5f,   0.0f}, {16.f, 0.08f, 16.f}, cCeil);          // Ceiling
+    cube({0.0f, -1.15f,  0.0f}, {14.f, 0.08f, 14.f}, cFloor);   // Floor
+    cube({0.0f,  2.0f,  -6.5f}, {14.f, 6.0f,  0.10f}, cWall);   // Back wall
+    cube({-7.0f, 2.0f,  -1.0f}, {0.10f,6.0f, 12.0f}, cWall);    // Left wall
+    cube({ 7.0f, 2.0f,  -1.0f}, {0.10f,6.0f, 12.0f}, cWall);    // Right wall
+    cube({0.0f,  5.0f,   0.0f}, {14.f, 0.08f, 14.f}, cFloor);   // Ceiling
 
     // =============================================
-    //  DESK  (wide carbon-fibre surface + 4 legs)
+    //  DESK  —  y=-0.55 puts surface just below camera
     // =============================================
-    cube({0.0f, -0.52f, -2.5f},  {5.5f, 0.09f, 2.8f}, cDesk);          // Desk top
-    cube({-2.6f, -0.97f, -2.5f}, {0.09f, 0.9f, 0.09f}, cDevice);       // Leg FL
-    cube({ 2.6f, -0.97f, -2.5f}, {0.09f, 0.9f, 0.09f}, cDevice);       // Leg FR
-    cube({-2.6f, -0.97f, -3.9f}, {0.09f, 0.9f, 0.09f}, cDevice);       // Leg BL
-    cube({ 2.6f, -0.97f, -3.9f}, {0.09f, 0.9f, 0.09f}, cDevice);       // Leg BR
+    cube({0.0f, -0.55f, -2.5f},  {4.8f, 0.08f, 2.4f}, cDesk);   // Desk surface
+    // 4 thin metal legs
+    cube({-2.3f, -0.98f, -1.6f}, {0.08f, 0.86f, 0.08f}, cDevice);
+    cube({ 2.3f, -0.98f, -1.6f}, {0.08f, 0.86f, 0.08f}, cDevice);
+    cube({-2.3f, -0.98f, -3.5f}, {0.08f, 0.86f, 0.08f}, cDevice);
+    cube({ 2.3f, -0.98f, -3.5f}, {0.08f, 0.86f, 0.08f}, cDevice);
 
     // =============================================
-    //  MONITOR  (frame + bezel + live camera screen)
+    //  MONITOR
+    //  Monitor center at y=0.55 (above desk surface), z=-3.8
+    //  Frame: 2.0w x 1.3h; Screen inset
     // =============================================
-    cube({0.0f, 0.30f, -3.45f}, {2.45f, 1.65f, 0.09f}, cMon);          // Outer frame
-    cube({0.0f, 0.30f, -3.40f}, {2.15f, 1.38f, 0.04f}, {0.01f,0.01f,0.01f}); // inner bezel
-    // Monitor stand column + base
-    cube({0.0f, -0.30f, -3.45f}, {0.12f, 0.58f, 0.12f}, cDevice);
-    cube({0.0f, -0.58f, -3.30f}, {0.65f, 0.05f, 0.42f}, cDevice);
-    // Live webcam feed projected on the screen
+    const float monZ = -3.8f;
+    const float monY =  0.55f;
+    cube({0.0f, monY, monZ},      {2.10f, 1.40f, 0.09f}, cMon);          // Outer frame
+    cube({0.0f, monY, monZ+0.06f},{1.85f, 1.18f, 0.04f}, {0.01f,0.01f,0.01f}); // Bezel
+    // Stand: column + base
+    cube({0.0f, monY-0.78f, monZ},{0.11f, 0.55f, 0.11f}, cDevice);
+    cube({0.0f, monY-1.04f, monZ},{0.60f, 0.05f, 0.38f}, cDevice);
+    // Live camera feed on screen
     {
-        glm::mat4 screenM = glm::translate(glm::mat4(1.0f), {0.0f, 0.30f, -3.35f});
-        screenM = glm::scale(screenM, {2.10f, 1.30f, 0.01f});
-        renderTexturedQuad(screenM, view, projection);
+        glm::mat4 sm = glm::translate(glm::mat4(1.0f), {0.0f, monY, monZ+0.12f});
+        sm = glm::scale(sm, {1.80f, 1.12f, 0.01f});
+        renderTexturedQuad(sm, view, projection);
     }
 
     // =============================================
-    //  PC TOWER  (left side of desk)
+    //  PC TOWER  (right side of desk, on floor)
     // =============================================
-    cube({2.4f, -0.12f, -3.1f}, {0.62f, 1.20f, 0.62f}, cDevice);       // Tower body
-    // Tempered glass panel suggestion (very dark semi-transparent look via near-black thin face)
-    cube({2.09f, -0.12f, -3.1f}, {0.02f, 1.10f, 0.56f}, {0.03f,0.03f,0.08f}); // glass side
-
-    // =============================================
-    //  HEADPHONE STAND  (right of monitor)
-    // =============================================
-    cube({-2.2f,  0.0f, -3.1f}, {0.09f, 1.05f, 0.09f}, cDevice);       // Stand pole
-    cube({-2.2f,  0.55f,-3.1f}, {0.65f, 0.06f, 0.24f}, cDevice);       // Arch
-    cube({-2.2f, -0.57f,-3.1f}, {0.55f, 0.05f, 0.35f}, cDevice);       // Base
+    const float towerX = 3.0f;
+    cube({towerX, -0.40f, -3.5f},  {0.55f, 1.50f, 0.55f}, cDevice);   // Body
+    // Glass side panel (thin, very dark blue)
+    cube({towerX-0.29f,-0.40f,-3.5f},{0.02f,1.36f,0.48f},{0.03f,0.03f,0.10f});
 
     // =============================================
-    //  RGB OBJECTS  —  color cycles over time
+    //  HEADPHONE STAND  (left of monitor on desk)
     // =============================================
-
-    // LED strip under desk edge (floor-facing glow)
-    rgb({0.0f, -0.58f, -1.6f},   {5.5f, 0.015f, 0.04f}, 0.0f);
-
-    // Ambilight strips behind monitor (3-sided halo)
-    rgb({0.0f,  1.22f, -3.60f},  {2.65f, 0.03f, 0.10f}, 0.0f);        // top
-    rgb({-1.35f, 0.30f, -3.60f}, {0.03f, 1.70f, 0.10f}, 0.0f);        // left
-    rgb({ 1.35f, 0.30f, -3.60f}, {0.03f, 1.70f, 0.10f}, 0.0f);        // right
-
-    // Keyboard (full RGB surface glow)
-    rgb({0.0f, -0.46f, -2.05f},  {2.0f, 0.045f, 0.65f}, 0.33f);
-
-    // Mouse (RGB underglow logo)
-    rgb({1.25f, -0.47f, -2.05f}, {0.18f, 0.05f, 0.30f}, 0.50f);
-
-    // PC tower RGB front fan panel strip
-    rgb({2.08f, -0.12f, -3.1f},  {0.02f, 0.90f, 0.52f}, 0.25f);
-    // PC tower top RGB accent strip
-    rgb({2.4f,  0.49f, -3.1f},   {0.62f, 0.025f,0.62f}, 0.30f);
-
-    // Monitor stand base RGB accent
-    rgb({0.0f, -0.55f, -3.22f},  {0.60f, 0.022f, 0.38f}, 0.70f);
-
-    // Headphone arch RGB band
-    rgb({-2.2f, 0.59f, -3.1f},   {0.63f, 0.04f, 0.20f}, 0.65f);
-
-    // Desk-edge RGB strip front-facing (seen from user's view)
-    rgb({0.0f, -0.47f, -1.17f},  {5.5f, 0.09f, 0.015f}, 0.80f);
+    cube({-2.0f, -0.35f, -3.5f}, {0.08f, 0.95f, 0.08f}, cDevice);  // pole
+    cube({-2.0f,  0.15f, -3.5f}, {0.55f, 0.06f, 0.22f}, cDevice);  // arch
+    cube({-2.0f, -0.62f, -3.5f}, {0.50f, 0.05f, 0.32f}, cDevice);  // base
 
     // =============================================
-    //  NANOLEAF PANELS  (back wall, 3 staggered rows)
-    //  Each panel has its own hue phase for a wave effect.
+    //  RGB OBJECTS
     // =============================================
-    const float nW = 0.52f, nH = 0.52f, nD = 0.04f;
-    const float wallZ = -5.9f;
-    // Row 1  (y = 1.55)
-    float row1y = 1.55f;
-    rgb({-3.2f, row1y, wallZ}, {nW,nH,nD}, 0.000f);
-    rgb({-1.9f, row1y, wallZ}, {nW,nH,nD}, 0.100f);
-    rgb({-0.6f, row1y, wallZ}, {nW,nH,nD}, 0.200f);
-    rgb({ 0.7f, row1y, wallZ}, {nW,nH,nD}, 0.300f);
-    rgb({ 2.0f, row1y, wallZ}, {nW,nH,nD}, 0.400f);
-    rgb({ 3.3f, row1y, wallZ}, {nW,nH,nD}, 0.500f);
-    // Row 2  (y = 2.12, staggered x)
-    float row2y = 2.12f;
-    rgb({-2.55f, row2y, wallZ}, {nW,nH,nD}, 0.050f);
-    rgb({-1.25f, row2y, wallZ}, {nW,nH,nD}, 0.150f);
-    rgb({ 0.05f, row2y, wallZ}, {nW,nH,nD}, 0.250f);
-    rgb({ 1.35f, row2y, wallZ}, {nW,nH,nD}, 0.350f);
-    rgb({ 2.65f, row2y, wallZ}, {nW,nH,nD}, 0.450f);
-    // Row 3  (y = 2.70)
-    float row3y = 2.70f;
-    rgb({-3.2f, row3y, wallZ}, {nW,nH,nD}, 0.025f);
-    rgb({-1.9f, row3y, wallZ}, {nW,nH,nD}, 0.125f);
-    rgb({-0.6f, row3y, wallZ}, {nW,nH,nD}, 0.225f);
-    rgb({ 0.7f, row3y, wallZ}, {nW,nH,nD}, 0.325f);
-    rgb({ 2.0f, row3y, wallZ}, {nW,nH,nD}, 0.425f);
-    rgb({ 3.3f, row3y, wallZ}, {nW,nH,nD}, 0.525f);
+
+    // 1. Desk front-edge RGB strip (the most visible accent, seen head-on)
+    rgb({0.0f, -0.51f, -1.35f}, {4.8f, 0.08f, 0.015f}, 0.0f);
+
+    // 2. LED underglow — thin horizontal line under desk, floor-facing
+    rgb({0.0f, -0.60f, -2.5f},  {4.8f, 0.012f, 0.05f}, 0.05f);
+
+    // 3. Ambilight halo behind monitor (3 strips: top, left side, right side)
+    rgb({0.0f,  monY+0.82f, monZ-0.06f}, {2.30f, 0.025f, 0.08f}, 0.0f);  // top
+    rgb({-(1.18f), monY, monZ-0.06f},    {0.025f,1.45f,  0.08f}, 0.0f);  // left
+    rgb({ (1.18f), monY, monZ-0.06f},    {0.025f,1.45f,  0.08f}, 0.0f);  // right
+
+    // 4. Keyboard — compact, sits on desk
+    rgb({-0.3f, -0.50f, -2.15f}, {1.35f, 0.04f, 0.50f}, 0.33f);
+
+    // 5. Mouse — small, to the right of keyboard
+    rgb({ 0.95f, -0.51f, -2.10f},{0.15f, 0.05f, 0.25f}, 0.55f);
+
+    // 6. PC tower: RGB front panel fan strip
+    rgb({towerX-0.29f, -0.40f, -3.5f}, {0.02f, 1.10f, 0.42f}, 0.25f);
+    // PC tower: top RGB accent
+    rgb({towerX, 0.37f, -3.5f},  {0.55f, 0.020f, 0.55f}, 0.30f);
+
+    // 7. Monitor stand base accent
+    rgb({0.0f, monY-1.07f, monZ},{0.58f, 0.018f, 0.36f}, 0.70f);
+
+    // 8. Headphone arch RGB band
+    rgb({-2.0f, 0.20f, -3.5f},  {0.53f, 0.035f, 0.18f}, 0.62f);
+
+    // =============================================
+    //  NANOLEAF PANELS  —  LEFT WALL  (x ≈ -6.9)
+    //  Panels face right (+X normal), clearly on wall,
+    //  at various y/z positions forming a cluster.
+    //  Using {depth, height, width} because panel is thin in X.
+    // =============================================
+    const float nX  = -6.85f;  // just in front of left wall
+    const float nS  =  0.48f;  // panel face size
+    const float nTh =  0.05f;  // panel thickness (X dimension)
+
+    // Cluster: 3 columns x 4 rows (staggered)
+    // Column A  z=-1.8
+    rgb({nX, 0.20f, -1.80f}, {nTh, nS, nS}, 0.000f);
+    rgb({nX, 0.72f, -1.80f}, {nTh, nS, nS}, 0.083f);
+    rgb({nX, 1.24f, -1.80f}, {nTh, nS, nS}, 0.167f);
+    rgb({nX, 1.76f, -1.80f}, {nTh, nS, nS}, 0.250f);
+    // Column B  z=-2.40  (offset y by half a panel)
+    rgb({nX, 0.46f, -2.40f}, {nTh, nS, nS}, 0.042f);
+    rgb({nX, 0.98f, -2.40f}, {nTh, nS, nS}, 0.125f);
+    rgb({nX, 1.50f, -2.40f}, {nTh, nS, nS}, 0.208f);
+    rgb({nX, 2.02f, -2.40f}, {nTh, nS, nS}, 0.292f);
+    // Column C  z=-3.00
+    rgb({nX, 0.20f, -3.00f}, {nTh, nS, nS}, 0.333f);
+    rgb({nX, 0.72f, -3.00f}, {nTh, nS, nS}, 0.417f);
+    rgb({nX, 1.24f, -3.00f}, {nTh, nS, nS}, 0.500f);
+    rgb({nX, 1.76f, -3.00f}, {nTh, nS, nS}, 0.583f);
 }
 
 void StereoRenderer::renderVirtualScene(const glm::mat4& view, const glm::mat4& projection) {
