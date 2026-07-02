@@ -1,0 +1,20 @@
+[
+{
+  "directory": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DGLFW_DLL -IC:/Users/rodri/OneDrive/Desktop/Proyectos/cv -isystem C:/msys64/mingw64/include/opencv4 -std=gnu++17 -o CMakeFiles\\MilgramSandbox.dir\\main.cpp.obj -c C:\\Users\\rodri\\OneDrive\\Desktop\\Proyectos\\cv\\main.cpp",
+  "file": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/main.cpp",
+  "output": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/build/CMakeFiles/MilgramSandbox.dir/main.cpp.obj"
+},
+{
+  "directory": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DGLFW_DLL -IC:/Users/rodri/OneDrive/Desktop/Proyectos/cv -isystem C:/msys64/mingw64/include/opencv4 -std=gnu++17 -o CMakeFiles\\MilgramSandbox.dir\\MarkerTracker.cpp.obj -c C:\\Users\\rodri\\OneDrive\\Desktop\\Proyectos\\cv\\MarkerTracker.cpp",
+  "file": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/MarkerTracker.cpp",
+  "output": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/build/CMakeFiles/MilgramSandbox.dir/MarkerTracker.cpp.obj"
+},
+{
+  "directory": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DGLFW_DLL -IC:/Users/rodri/OneDrive/Desktop/Proyectos/cv -isystem C:/msys64/mingw64/include/opencv4 -std=gnu++17 -o CMakeFiles\\MilgramSandbox.dir\\StereoRenderer.cpp.obj -c C:\\Users\\rodri\\OneDrive\\Desktop\\Proyectos\\cv\\StereoRenderer.cpp",
+  "file": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/StereoRenderer.cpp",
+  "output": "C:/Users/rodri/OneDrive/Desktop/Proyectos/cv/build/CMakeFiles/MilgramSandbox.dir/StereoRenderer.cpp.obj"
+}
+]

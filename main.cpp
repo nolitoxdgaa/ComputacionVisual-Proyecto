@@ -7,6 +7,11 @@
 #include "StereoRenderer.h"
 #include "MathUtils.h"
 
+// GLM Headers
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+
 // ==========================================
 // CONFIGURACION GLOBAL
 // ==========================================
@@ -124,6 +129,44 @@ int main() {
     // ==========================================
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        // --- Procesar Mando VR / Gamepad (Oculus Touch emulado por SteamVR/Virtual Desktop) ---
+        if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+            int axesCount;
+            const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axesCount);
+            if (axesCount >= 4) {
+                float sensitivity = 1.5f; // Sensibilidad del joystick derecho
+                // Eje 2 (Right Stick X -> Yaw), Eje 3 (Right Stick Y -> Pitch)
+                if (axes[2] > 0.15f || axes[2] < -0.15f) {
+                    cameraYaw += axes[2] * sensitivity;
+                }
+                if (axes[3] > 0.15f || axes[3] < -0.15f) {
+                    cameraPitch -= axes[3] * sensitivity; // Invertir si es necesario
+                }
+                cameraPitch = glm::clamp(cameraPitch, -89.0f, 89.0f);
+            }
+            
+            int btnCount;
+            const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &btnCount);
+            static bool btnA = false, btnB = false, btnX = false, btnY = false;
+            if (btnCount >= 4) {
+                // Boton A (Modo 1)
+                if (buttons[0] == GLFW_PRESS && !btnA) { g_continuum->handleKeyPress('1'); btnA = true; }
+                else if (buttons[0] == GLFW_RELEASE) { btnA = false; }
+                
+                // Boton B (Modo 2)
+                if (buttons[1] == GLFW_PRESS && !btnB) { g_continuum->handleKeyPress('2'); btnB = true; }
+                else if (buttons[1] == GLFW_RELEASE) { btnB = false; }
+                
+                // Boton X (Modo 3)
+                if (buttons[2] == GLFW_PRESS && !btnX) { g_continuum->handleKeyPress('3'); btnX = true; }
+                else if (buttons[2] == GLFW_RELEASE) { btnX = false; }
+                
+                // Boton Y (Modo 4)
+                if (buttons[3] == GLFW_PRESS && !btnY) { g_continuum->handleKeyPress('4'); btnY = true; }
+                else if (buttons[3] == GLFW_RELEASE) { btnY = false; }
+            }
+        }
 
         // Capturar frame de la camara
         if (cameraOk) {

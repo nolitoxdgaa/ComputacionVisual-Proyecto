@@ -354,9 +354,13 @@ bool StereoRenderer::initialize() {
 
 void StereoRenderer::updateVideoTexture(const cv::Mat& frame) {
     if (frame.empty()) return;
+    
+    // Corregir el formato de colores de BGR a RGB para evitar el tono azulado en OpenGL
+    cv::Mat rgbFrame;
+    cv::cvtColor(frame, rgbFrame, cv::COLOR_BGR2RGB);
+    
     glBindTexture(GL_TEXTURE_2D, videoTextureId);
-    // Upload OpenCV BGR texture
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, frame.cols, frame.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, frame.data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, rgbFrame.cols, rgbFrame.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, rgbFrame.data);
 }
 
 void StereoRenderer::renderBackground() {
