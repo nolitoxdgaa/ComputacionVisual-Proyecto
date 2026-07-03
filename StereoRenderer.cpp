@@ -25,9 +25,8 @@ const std::string quadFragmentShaderSrc = R"(
     in vec2 TexCoords;
     uniform sampler2D videoTexture;
     void main() {
-        // OpenCV captures in BGR format, swap channels to render correct RGB in OpenGL
-        vec3 bgr = texture(videoTexture, TexCoords).rgb;
-        FragColor = vec4(bgr.b, bgr.g, bgr.r, 1.0);
+        vec3 rgb = texture(videoTexture, TexCoords).rgb;
+        FragColor = vec4(rgb, 1.0);
     }
 )";
 
